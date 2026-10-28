@@ -1,0 +1,2903 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Mila Video</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    -webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#080a0f;
+    color:#fff;
+    font-family:Arial,"Noto Sans KR",sans-serif;
+}
+
+button,input,textarea{font:inherit}
+
+button{
+    border:0;
+    color:#fff;
+    background:#202632;
+    border-radius:9px;
+    padding:9px 12px;
+    cursor:pointer;
+}
+
+button:active{transform:scale(.97)}
+.hidden{display:none!important}
+
+#login{
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:
+        radial-gradient(circle at center,#151b27 0,#090b10 55%,#050609 100%);
+}
+
+.loginBox{
+    width:min(88vw,360px);
+    padding:27px;
+    border:1px solid #29313f;
+    border-radius:18px;
+    background:rgba(15,18,25,.96);
+    box-shadow:0 20px 70px rgba(0,0,0,.55);
+    text-align:center;
+}
+
+.loginBox h1{
+    margin:0 0 8px;
+    font-size:23px;
+}
+
+.loginBox p{
+    margin:0 0 20px;
+    color:#858fa0;
+    font-size:13px;
+}
+
+#password{
+    width:100%;
+    padding:13px;
+    border:1px solid #303847;
+    border-radius:10px;
+    outline:none;
+    color:#fff;
+    background:#090c12;
+}
+
+#loginButton{
+    width:100%;
+    margin-top:9px;
+    background:#536cff;
+}
+
+#loginError{
+    height:18px;
+    margin-top:8px;
+    color:#ff6877;
+    font-size:12px;
+}
+
+#app{
+    position:fixed;
+    inset:0;
+    display:none;
+    overflow:hidden;
+    background:#090b10;
+}
+
+#home{
+    position:absolute;
+    inset:0;
+    overflow:auto;
+    padding:
+        calc(env(safe-area-inset-top) + 15px)
+        14px
+        calc(env(safe-area-inset-bottom) + 20px);
+}
+
+.homeInner{
+    width:min(760px,100%);
+    margin:auto;
+}
+
+.homeHeader{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:15px;
+}
+
+.logo{
+    font-size:19px;
+    font-weight:bold;
+    letter-spacing:.5px;
+}
+
+.headerButtons{
+    display:flex;
+    gap:6px;
+}
+
+.headerButtons button{
+    padding:8px 10px;
+    font-size:11px;
+}
+
+.infoCard{
+    padding:15px;
+    border:1px solid #252d3a;
+    border-radius:15px;
+    background:#11151d;
+    margin-bottom:13px;
+}
+
+.infoCard label{
+    display:block;
+    color:#798496;
+    font-size:11px;
+    margin-bottom:5px;
+}
+
+#titleInput,
+#descriptionInput{
+    width:100%;
+    border:1px solid #303847;
+    background:#080b10;
+    color:#fff;
+    outline:none;
+    border-radius:9px;
+    padding:10px;
+    margin-bottom:10px;
+}
+
+#descriptionInput{
+    min-height:70px;
+    resize:vertical;
+}
+
+#saveInfo{
+    font-size:11px;
+    background:#283144;
+}
+
+.storyCard{
+    border:1px solid #252d3a;
+    border-radius:15px;
+    background:#11151d;
+    padding:12px;
+}
+
+.storyTitle{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:9px;
+}
+
+.storyTitle strong{font-size:14px}
+.storyTitle span{
+    color:#788395;
+    font-size:10px;
+}
+
+#storyStage{
+    position:relative;
+    width:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    overflow:hidden;
+    border-radius:9px;
+    background:#07090d;
+}
+
+#storyImage{
+    display:block;
+    width:100%;
+    height:auto;
+    max-height:calc(100vh - 230px);
+    object-fit:contain;
+    user-select:none;
+    -webkit-user-drag:none;
+}
+
+#storyGrid{
+    position:absolute;
+    inset:0;
+    display:grid;
+    grid-template-columns:repeat(10,1fr);
+    grid-template-rows:repeat(10,1fr);
+}
+
+.storyCell{
+    position:relative;
+    min-width:0;
+    min-height:0;
+    cursor:pointer;
+}
+
+.storyCell:active{
+    background:rgba(255,255,255,.14);
+}
+
+.videoOpenArea{margin-top:13px}
+
+#openVideo{
+    width:100%;
+    padding:13px;
+    background:#536cff;
+    font-weight:bold;
+}
+
+#roroScreen{
+    position:fixed;
+    inset:0;
+    z-index:3000;
+    display:none;
+    background:#000;
+}
+
+#roroFrame{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    border:0;
+    background:#fff;
+}
+
+.roroTop{
+    position:absolute;
+    top:10px;
+    left:10px;
+    z-index:5;
+}
+
+.roroTop button{
+    background:rgba(10,13,19,.88);
+    backdrop-filter:blur(10px);
+    border:1px solid #303847;
+    font-size:11px;
+}
+
+#videoScreen{
+    position:fixed;
+    inset:0;
+    z-index:5000;
+    display:none;
+    background:#000;
+}
+
+#videoArea{
+    position:absolute;
+    inset:0;
+    overflow:hidden;
+    background:#000;
+}
+
+#videoFrame{
+    position:absolute;
+    left:0;
+    top:0;
+    width:100%;
+    height:100%;
+    border:0;
+    background:#000;
+    transform-origin:0 0;
+}
+
+#videoToolbar{
+    position:absolute;
+    z-index:50;
+    top:calc(env(safe-area-inset-top) + 9px);
+    left:9px;
+    right:9px;
+    min-height:43px;
+    display:flex;
+    align-items:center;
+    gap:5px;
+    padding:5px 6px;
+    background:rgba(8,11,17,.90);
+    border:1px solid #2c3441;
+    border-radius:12px;
+    backdrop-filter:blur(12px);
+}
+
+#videoToolbar button{
+    padding:7px 9px;
+    font-size:11px;
+    white-space:nowrap;
+}
+
+#videoModeText{
+    margin-left:auto;
+    color:#a8b1c0;
+    font-size:10px;
+    white-space:nowrap;
+}
+
+#videoArea.zoomMode{touch-action:none}
+#videoArea.clickMode{touch-action:auto}
+#videoArea.viewMode{touch-action:none}
+#videoFrame.blocked{pointer-events:none}
+
+#cropOverlay{
+    position:absolute;
+    inset:0;
+    z-index:40;
+    display:none;
+    pointer-events:none;
+}
+
+#cropDark{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,.72);
+}
+
+#cropSelection{
+    position:absolute;
+    display:none;
+    border:2px dashed #fff;
+    background:rgba(255,255,255,.08);
+}
+
+.cropSavedBox{
+    position:absolute;
+    border:2px solid #657cff;
+    background:rgba(83,108,255,.10);
+}
+
+#cropInstruction{
+    position:absolute;
+    z-index:100;
+    left:50%;
+    bottom:calc(env(safe-area-inset-bottom) + 16px);
+    transform:translateX(-50%);
+    padding:10px 14px;
+    border:1px solid #3b4555;
+    border-radius:11px;
+    background:rgba(10,13,18,.95);
+    color:#fff;
+    font-size:11px;
+    white-space:nowrap;
+    display:none;
+}
+
+#cropInstruction b{color:#7287ff}
+
+#storyViewer{
+    position:fixed;
+    inset:0;
+    z-index:7000;
+    display:none;
+    background:#000;
+    overflow:hidden;
+    touch-action:none;
+}
+
+#storyViewerArea{
+    position:absolute;
+    inset:0;
+    overflow:hidden;
+    touch-action:none;
+}
+
+#selectedStory{
+    position:absolute;
+    left:0;
+    top:0;
+    width:1000%;
+    height:1000%;
+    max-width:none;
+    max-height:none;
+    object-fit:fill;
+    transform-origin:0 0;
+    user-select:none;
+    -webkit-user-drag:none;
+}
+
+#storyBack{
+    position:absolute;
+    z-index:10;
+    top:calc(env(safe-area-inset-top) + 10px);
+    left:10px;
+    background:rgba(10,13,19,.88);
+    border:1px solid #303847;
+    font-size:11px;
+}
+
+#storyZoomText{
+    position:absolute;
+    z-index:10;
+    top:calc(env(safe-area-inset-top) + 10px);
+    right:10px;
+    padding:8px 10px;
+    border-radius:9px;
+    background:rgba(10,13,19,.88);
+    border:1px solid #303847;
+    color:#b6becb;
+    font-size:10px;
+}
+
+#settingsPanel{
+    position:fixed;
+    z-index:9000;
+    right:10px;
+    top:calc(env(safe-area-inset-top) + 58px);
+    width:min(310px,calc(100vw - 20px));
+    padding:14px;
+    background:#11151d;
+    border:1px solid #2b3442;
+    border-radius:14px;
+    box-shadow:0 15px 45px rgba(0,0,0,.55);
+    display:none;
+}
+
+#settingsPanel h3{
+    margin:0 0 12px;
+    font-size:14px;
+}
+
+.settingsRow{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    margin-bottom:9px;
+}
+
+.settingsRow button{font-size:11px}
+
+.settingsHelp{
+    color:#7f8999;
+    line-height:1.5;
+    font-size:10px;
+}
+
+#videoPopup{
+    position:fixed;
+    z-index:8500;
+    width:310px;
+    height:205px;
+    right:12px;
+    bottom:calc(env(safe-area-inset-bottom) + 12px);
+    background:#000;
+    border:1px solid #465061;
+    border-radius:13px;
+    overflow:hidden;
+    box-shadow:0 15px 50px rgba(0,0,0,.75);
+    display:none;
+    touch-action:none;
+}
+
+#popupVideo{
+    position:absolute;
+    left:0;
+    top:0;
+    width:100%;
+    height:calc(100% - 38px);
+    border:0;
+    background:#000;
+}
+
+#popupControl{
+    position:absolute;
+    left:0;
+    bottom:0;
+    width:100%;
+    height:38px;
+    border:0;
+    background:#000;
+}
+
+#popupDrag{
+    position:absolute;
+    left:0;
+    top:0;
+    right:55px;
+    height:30px;
+    z-index:10;
+    cursor:move;
+}
+
+#popupButtons{
+    position:absolute;
+    top:3px;
+    right:3px;
+    z-index:20;
+    display:flex;
+    gap:3px;
+}
+
+#popupButtons button{
+    padding:4px 7px;
+    font-size:9px;
+    background:rgba(10,13,19,.85);
+}
+
+#popupResize{
+    position:absolute;
+    right:0;
+    bottom:0;
+    width:25px;
+    height:25px;
+    z-index:30;
+    cursor:nwse-resize;
+    background:rgba(255,255,255,.12);
+}
+
+@media(max-width:600px){
+
+    #home{
+        padding-left:10px;
+        padding-right:10px;
+    }
+
+    .homeHeader{margin-bottom:10px}
+
+    .logo{font-size:16px}
+
+    #storyImage{
+        max-height:none;
+    }
+
+    .infoCard{padding:12px}
+
+    #videoToolbar{
+        overflow-x:auto;
+        scrollbar-width:none;
+    }
+
+    #videoToolbar::-webkit-scrollbar{
+        display:none;
+    }
+
+    #videoModeText{display:none}
+
+    #videoPopup{
+        width:280px;
+        height:185px;
+        right:8px;
+        bottom:8px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div id="login">
+
+    <div class="loginBox">
+
+        <h1>Mila Video</h1>
+
+        <p>
+            비밀번호를 입력하면 앱을 사용할 수 있습니다.
+        </p>
+
+        <input
+            id="password"
+            type="password"
+            autocomplete="off"
+            placeholder="비밀번호">
+
+        <button id="loginButton">
+            입장
+        </button>
+
+        <div id="loginError"></div>
+
+    </div>
+
+</div>
+
+
+<div id="app">
+
+    <section id="home">
+
+        <div class="homeInner">
+
+            <div class="homeHeader">
+
+                <div class="logo">
+                    MILA VIDEO
+                </div>
+
+                <div class="headerButtons">
+
+                    <button id="settingsButton">
+                        설정
+                    </button>
+
+                    <button id="roroButton">
+                        메인 화면
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div class="infoCard">
+
+                <label>
+                    영상 제목
+                </label>
+
+                <input
+                    id="titleInput"
+                    value="mila grant prison intake"
+                    placeholder="영상 제목">
+
+                <label>
+                    설명
+                </label>
+
+                <textarea
+                    id="descriptionInput"
+                    placeholder="설명을 입력하세요"></textarea>
+
+                <button id="saveInfo">
+                    정보 저장
+                </button>
+
+            </div>
+
+
+            <div class="storyCard">
+
+                <div class="storyTitle">
+
+                    <strong>
+                        Storyboard
+                    </strong>
+
+                    <span>
+                        10 × 10 · 100장
+                    </span>
+
+                </div>
+
+
+                <div id="storyStage">
+
+                    <img
+                        id="storyImage"
+                        src="storyboard.png"
+                        alt="Storyboard">
+
+                    <div id="storyGrid"></div>
+
+                </div>
+
+            </div>
+
+
+            <div class="videoOpenArea">
+
+                <button id="openVideo">
+                    ▶ 영상 보기
+                </button>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<section id="roroScreen">
+
+    <iframe
+        id="roroFrame"
+        src="about:blank"
+        allow="autoplay;fullscreen"
+        referrerpolicy="no-referrer">
+    </iframe>
+
+    <div class="roroTop">
+
+        <button id="roroBack">
+            ← 영상 앱
+        </button>
+
+    </div>
+
+</section>
+
+
+<section id="videoScreen">
+
+    <div id="videoArea" class="clickMode">
+
+        <iframe
+            id="videoFrame"
+            src="about:blank"
+            allow="autoplay;fullscreen;picture-in-picture"
+            referrerpolicy="no-referrer">
+        </iframe>
+
+        <div id="cropOverlay">
+
+            <div id="cropDark"></div>
+
+            <div id="cropSelection"></div>
+
+        </div>
+
+    </div>
+
+
+    <div id="videoToolbar">
+
+        <button id="videoBack">
+            ←
+        </button>
+
+        <button data-video-mode="click">
+            클릭
+        </button>
+
+        <button data-video-mode="zoom">
+            확대
+        </button>
+
+        <button data-video-mode="view">
+            보기
+        </button>
+
+        <button id="cropStartButton">
+            크롭
+        </button>
+
+        <button id="cropSaveButton">
+            저장
+        </button>
+
+        <span id="videoModeText">
+            클릭
+        </span>
+
+    </div>
+
+
+    <div id="cropInstruction">
+        <b>1 / 3</b>
+        영상 영역을 드래그하세요.
+    </div>
+
+</section>
+
+
+<section id="storyViewer">
+
+    <button id="storyBack">
+        ← 목록
+    </button>
+
+    <span id="storyZoomText">
+        100%
+    </span>
+
+    <div id="storyViewerArea">
+
+        <img
+            id="selectedStory"
+            src="storyboard.png"
+            alt="Storyboard selected">
+
+    </div>
+
+</section>
+
+
+<section id="settingsPanel">
+
+    <h3>
+        영상 설정
+    </h3>
+
+
+    <div class="settingsRow">
+
+        <button data-setting-mode="click">
+            클릭
+        </button>
+
+        <button data-setting-mode="zoom">
+            확대
+        </button>
+
+        <button data-setting-mode="view">
+            보기
+        </button>
+
+    </div>
+
+
+    <div class="settingsRow">
+
+        <button id="settingsCrop">
+            크롭 설정
+        </button>
+
+        <button id="settingsCropClear">
+            크롭 해제
+        </button>
+
+    </div>
+
+
+    <div class="settingsRow">
+
+        <button id="popupOpen">
+            팝업 열기
+        </button>
+
+    </div>
+
+
+    <div class="settingsHelp">
+
+        영상 모드<br>
+        • 클릭 : 영상 내부 클릭 가능<br>
+        • 확대 : 핀치아웃 + 드래그<br>
+        • 보기 : 영상 표시만 하고 조작 차단<br><br>
+
+        크롭은 순서대로<br>
+        ① 영상<br>
+        ② 영상 길이 바<br>
+        ③ 설정 바<br>
+        세 영역을 지정합니다.
+
+    </div>
+
+</section>
+
+
+<section id="videoPopup">
+
+    <div id="popupButtons">
+
+        <button id="popupClose">
+            해제
+        </button>
+
+    </div>
+
+
+    <div id="popupDrag"></div>
+
+
+    <iframe
+        id="popupVideo"
+        src="about:blank"
+        allow="autoplay;fullscreen;picture-in-picture"
+        referrerpolicy="no-referrer">
+    </iframe>
+
+
+    <iframe
+        id="popupControl"
+        src="about:blank"
+        allow="autoplay;fullscreen"
+        referrerpolicy="no-referrer">
+    </iframe>
+
+
+    <div id="popupResize"></div>
+
+</section>
+
+
+<script>
+"use strict";
+
+
+/* =====================================
+   정확한 URL
+===================================== */
+
+const PASSWORD = "mila130102!";
+
+const VIDEO_URL =
+"https://u.pcloud.link/publink/show?code=XZlxhzJZrigVSStpBFR7SU4aCsHBo01eFvFV";
+
+const RORO_URL =
+"https://rorotube.val.run";
+
+
+/* =====================================
+   요소
+===================================== */
+
+const login =
+document.getElementById("login");
+
+const app =
+document.getElementById("app");
+
+const password =
+document.getElementById("password");
+
+const loginButton =
+document.getElementById("loginButton");
+
+const loginError =
+document.getElementById("loginError");
+
+const home =
+document.getElementById("home");
+
+const roroScreen =
+document.getElementById("roroScreen");
+
+const roroFrame =
+document.getElementById("roroFrame");
+
+const videoScreen =
+document.getElementById("videoScreen");
+
+const videoArea =
+document.getElementById("videoArea");
+
+const videoFrame =
+document.getElementById("videoFrame");
+
+const videoModeText =
+document.getElementById("videoModeText");
+
+const settingsPanel =
+document.getElementById("settingsPanel");
+
+const videoPopup =
+document.getElementById("videoPopup");
+
+const popupVideo =
+document.getElementById("popupVideo");
+
+const popupControl =
+document.getElementById("popupControl");
+
+const storyViewer =
+document.getElementById("storyViewer");
+
+const selectedStory =
+document.getElementById("selectedStory");
+
+const storyViewerArea =
+document.getElementById("storyViewerArea");
+
+
+/* =====================================
+   로그인
+===================================== */
+
+function unlock(){
+
+    if(password.value === PASSWORD){
+
+        sessionStorage.setItem(
+            "milaUnlocked",
+            "1"
+        );
+
+        login.style.display = "none";
+        app.style.display = "block";
+
+        loadSavedData();
+
+    }else{
+
+        loginError.textContent =
+            "비밀번호가 올바르지 않습니다.";
+
+        password.value = "";
+
+        password.focus();
+
+    }
+
+}
+
+
+loginButton.addEventListener(
+    "click",
+    unlock
+);
+
+
+password.addEventListener(
+    "keydown",
+    e => {
+
+        if(e.key === "Enter"){
+            unlock();
+        }
+
+    }
+);
+
+
+if(
+    sessionStorage.getItem(
+        "milaUnlocked"
+    ) === "1"
+){
+
+    login.style.display = "none";
+    app.style.display = "block";
+
+}
+
+
+/* =====================================
+   제목 / 설명
+===================================== */
+
+const titleInput =
+document.getElementById("titleInput");
+
+const descriptionInput =
+document.getElementById("descriptionInput");
+
+
+function loadSavedData(){
+
+    const title =
+        localStorage.getItem("milaTitle");
+
+    const description =
+        localStorage.getItem("milaDescription");
+
+
+    if(title !== null){
+        titleInput.value = title;
+    }
+
+
+    if(description !== null){
+        descriptionInput.value = description;
+    }
+
+}
+
+
+document
+.getElementById("saveInfo")
+.addEventListener(
+    "click",
+    () => {
+
+        localStorage.setItem(
+            "milaTitle",
+            titleInput.value
+        );
+
+        localStorage.setItem(
+            "milaDescription",
+            descriptionInput.value
+        );
+
+    }
+);
+
+
+/* =====================================
+   설정
+===================================== */
+
+document
+.getElementById("settingsButton")
+.addEventListener(
+    "click",
+    () => {
+
+        settingsPanel.style.display =
+            settingsPanel.style.display === "block"
+            ? "none"
+            : "block";
+
+    }
+);
+
+
+/* =====================================
+   ROROTUBE
+===================================== */
+
+function openRoro(){
+
+    roroScreen.style.display = "block";
+
+    if(
+        roroFrame.src === "about:blank" ||
+        !roroFrame.src
+    ){
+
+        roroFrame.src = RORO_URL;
+
+    }
+
+}
+
+
+document
+.getElementById("roroButton")
+.addEventListener(
+    "click",
+    openRoro
+);
+
+
+document
+.getElementById("roroBack")
+.addEventListener(
+    "click",
+    () => {
+
+        roroScreen.style.display = "none";
+
+    }
+);
+
+
+/* =====================================
+   영상 열기
+===================================== */
+
+function openVideo(){
+
+    home.style.display = "none";
+
+    roroScreen.style.display = "none";
+
+    videoScreen.style.display = "block";
+
+
+    /*
+      정확한 pCloud URL.
+      영상 보기 버튼을 눌렀을 때만 로드.
+    */
+
+    if(
+        videoFrame.src === "about:blank" ||
+        !videoFrame.src
+    ){
+
+        videoFrame.src = VIDEO_URL;
+
+    }
+
+
+    setVideoMode("click");
+
+    loadCrop();
+
+}
+
+
+document
+.getElementById("openVideo")
+.addEventListener(
+    "click",
+    openVideo
+);
+
+
+/* =====================================
+   영상 뒤로가기
+===================================== */
+
+document
+.getElementById("videoBack")
+.addEventListener(
+    "click",
+    () => {
+
+        videoScreen.style.display = "none";
+
+        settingsPanel.style.display = "none";
+
+        openRoro();
+
+    }
+);
+
+
+/* =====================================
+   영상 모드
+===================================== */
+
+let videoMode = "click";
+
+
+function setVideoMode(mode){
+
+    videoMode = mode;
+
+    videoArea.classList.remove(
+        "clickMode",
+        "zoomMode",
+        "viewMode"
+    );
+
+    videoArea.classList.add(
+        mode + "Mode"
+    );
+
+
+    if(mode === "click"){
+
+        videoFrame.classList.remove("blocked");
+
+        videoModeText.textContent =
+            "클릭";
+
+        videoArea.style.touchAction =
+            "auto";
+
+    }
+
+
+    if(mode === "zoom"){
+
+        videoFrame.classList.add("blocked");
+
+        videoModeText.textContent =
+            "확대";
+
+        videoArea.style.touchAction =
+            "none";
+
+    }
+
+
+    if(mode === "view"){
+
+        videoFrame.classList.add("blocked");
+
+        videoModeText.textContent =
+            "보기";
+
+        videoArea.style.touchAction =
+            "none";
+
+    }
+
+}
+
+
+document
+.querySelectorAll("[data-video-mode]")
+.forEach(button => {
+
+    button.addEventListener(
+        "click",
+        () => {
+
+            setVideoMode(
+                button.dataset.videoMode
+            );
+
+        }
+    );
+
+});
+
+
+document
+.querySelectorAll("[data-setting-mode]")
+.forEach(button => {
+
+    button.addEventListener(
+        "click",
+        () => {
+
+            setVideoMode(
+                button.dataset.settingMode
+            );
+
+            settingsPanel.style.display =
+                "none";
+
+        }
+    );
+
+});
+
+
+/* =====================================
+   영상 확대 / 이동
+===================================== */
+
+let videoScale = 1;
+let videoX = 0;
+let videoY = 0;
+
+let videoPointers =
+    new Map();
+
+let videoGesture = null;
+
+
+function applyVideoTransform(){
+
+    videoFrame.style.transform =
+        `translate(${videoX}px,${videoY}px) scale(${videoScale})`;
+
+}
+
+
+function distance(a,b){
+
+    return Math.hypot(
+        a.x-b.x,
+        a.y-b.y
+    );
+
+}
+
+
+function midpoint(a,b){
+
+    return {
+        x:(a.x+b.x)/2,
+        y:(a.y+b.y)/2
+    };
+
+}
+
+
+videoArea.addEventListener(
+    "pointerdown",
+    e => {
+
+        if(videoMode !== "zoom"){
+            return;
+        }
+
+        if(cropMode){
+            return;
+        }
+
+        videoArea.setPointerCapture?.(
+            e.pointerId
+        );
+
+        videoPointers.set(
+            e.pointerId,
+            {
+                x:e.clientX,
+                y:e.clientY
+            }
+        );
+
+
+        if(videoPointers.size === 1){
+
+            videoGesture = {
+
+                type:"move",
+
+                x:e.clientX,
+                y:e.clientY,
+
+                oldX:videoX,
+                oldY:videoY
+
+            };
+
+        }
+
+
+        if(videoPointers.size === 2){
+
+            const points =
+                [...videoPointers.values()];
+
+            videoGesture = {
+
+                type:"pinch",
+
+                distance:distance(
+                    points[0],
+                    points[1]
+                ),
+
+                scale:videoScale,
+
+                center:midpoint(
+                    points[0],
+                    points[1]
+                ),
+
+                x:videoX,
+                y:videoY
+
+            };
+
+        }
+
+    }
+);
+
+
+videoArea.addEventListener(
+    "pointermove",
+    e => {
+
+        if(videoMode !== "zoom"){
+            return;
+        }
+
+        if(cropMode){
+            return;
+        }
+
+        if(
+            !videoPointers.has(
+                e.pointerId
+            )
+        ){
+            return;
+        }
+
+
+        videoPointers.set(
+            e.pointerId,
+            {
+                x:e.clientX,
+                y:e.clientY
+            }
+        );
+
+
+        if(
+            videoPointers.size === 1 &&
+            videoGesture?.type === "move"
+        ){
+
+            videoX =
+                videoGesture.oldX +
+                (
+                    e.clientX -
+                    videoGesture.x
+                );
+
+            videoY =
+                videoGesture.oldY +
+                (
+                    e.clientY -
+                    videoGesture.y
+                );
+
+            applyVideoTransform();
+
+        }
+
+
+        if(
+            videoPointers.size === 2 &&
+            videoGesture?.type === "pinch"
+        ){
+
+            const points =
+                [...videoPointers.values()];
+
+            const newDistance =
+                distance(
+                    points[0],
+                    points[1]
+                );
+
+            let newScale =
+                videoGesture.scale *
+                (
+                    newDistance /
+                    videoGesture.distance
+                );
+
+
+            newScale =
+                Math.max(
+                    .15,
+                    Math.min(
+                        100,
+                        newScale
+                    )
+                );
+
+
+            const center =
+                midpoint(
+                    points[0],
+                    points[1]
+                );
+
+
+            const ratio =
+                newScale /
+                videoGesture.scale;
+
+
+            videoX =
+                center.x -
+                (
+                    center.x -
+                    videoGesture.x
+                ) * ratio;
+
+
+            videoY =
+                center.y -
+                (
+                    center.y -
+                    videoGesture.y
+                ) * ratio;
+
+
+            videoScale =
+                newScale;
+
+
+            applyVideoTransform();
+
+        }
+
+    }
+);
+
+
+[
+    "pointerup",
+    "pointercancel",
+    "lostpointercapture"
+].forEach(eventName => {
+
+    videoArea.addEventListener(
+        eventName,
+        e => {
+
+            videoPointers.delete(
+                e.pointerId
+            );
+
+            if(videoPointers.size === 0){
+                videoGesture = null;
+            }
+
+        }
+    );
+
+});
+
+
+videoArea.addEventListener(
+    "wheel",
+    e => {
+
+        if(videoMode !== "zoom"){
+            return;
+        }
+
+        if(cropMode){
+            return;
+        }
+
+        e.preventDefault();
+
+        const oldScale =
+            videoScale;
+
+        let newScale =
+            oldScale *
+            (
+                e.deltaY < 0
+                ? 1.15
+                : .87
+            );
+
+        newScale =
+            Math.max(
+                .15,
+                Math.min(
+                    100,
+                    newScale
+                )
+            );
+
+
+        const ratio =
+            newScale /
+            oldScale;
+
+
+        videoX =
+            e.clientX -
+            (
+                e.clientX -
+                videoX
+            ) * ratio;
+
+
+        videoY =
+            e.clientY -
+            (
+                e.clientY -
+                videoY
+            ) * ratio;
+
+
+        videoScale =
+            newScale;
+
+
+        applyVideoTransform();
+
+    },
+    {passive:false}
+);
+
+
+/* =====================================
+   스토리보드
+===================================== */
+
+const storyGrid =
+document.getElementById("storyGrid");
+
+
+for(let i=0;i<100;i++){
+
+    const cell =
+        document.createElement("div");
+
+    cell.className =
+        "storyCell";
+
+    cell.dataset.index =
+        i;
+
+    cell.addEventListener(
+        "click",
+        () => {
+
+            openStoryboardCell(i);
+
+        }
+    );
+
+    storyGrid.appendChild(cell);
+
+}
+
+
+let selectedStoryIndex = 0;
+
+let storyScale = 1;
+let storyX = 0;
+let storyY = 0;
+
+let storyPointers =
+    new Map();
+
+let storyGesture = null;
+
+
+function openStoryboardCell(index){
+
+    selectedStoryIndex =
+        index;
+
+    storyScale = 1;
+    storyX = 0;
+    storyY = 0;
+
+    storyViewer.style.display =
+        "block";
+
+
+    const col =
+        index % 10;
+
+    const row =
+        Math.floor(index / 10);
+
+
+    const image =
+        document.getElementById(
+            "storyImage"
+        );
+
+
+    function setup(){
+
+        const ratio =
+            image.naturalWidth /
+            image.naturalHeight;
+
+
+        storyViewerArea.style.aspectRatio =
+            ratio;
+
+
+        storyViewerArea.style.width =
+            "min(94vw,94vh * " +
+            ratio +
+            ")";
+
+
+        storyViewerArea.style.height =
+            "auto";
+
+
+        storyViewerArea.style.left =
+            "50%";
+
+        storyViewerArea.style.top =
+            "50%";
+
+        storyViewerArea.style.transform =
+            "translate(-50%,-50%)";
+
+
+        selectedStory.style.width =
+            "1000%";
+
+        selectedStory.style.height =
+            "1000%";
+
+
+        selectedStory.style.transform =
+            `translate(${-col*10}%,${-row*10}%) scale(1)`;
+
+
+        document.getElementById(
+            "storyZoomText"
+        ).textContent =
+            "100%";
+
+    }
+
+
+    if(image.complete){
+        setup();
+    }else{
+        image.onload =
+            setup;
+    }
+
+}
+
+
+document
+.getElementById("storyBack")
+.addEventListener(
+    "click",
+    () => {
+
+        storyViewer.style.display =
+            "none";
+
+        storyPointers.clear();
+
+        storyGesture = null;
+
+    }
+);
+
+
+storyViewerArea.addEventListener(
+    "pointerdown",
+    e => {
+
+        storyViewerArea.setPointerCapture?.(
+            e.pointerId
+        );
+
+        storyPointers.set(
+            e.pointerId,
+            {
+                x:e.clientX,
+                y:e.clientY
+            }
+        );
+
+
+        if(storyPointers.size === 1){
+
+            storyGesture = {
+
+                type:"move",
+
+                x:e.clientX,
+                y:e.clientY,
+
+                oldX:storyX,
+                oldY:storyY
+
+            };
+
+        }
+
+
+        if(storyPointers.size === 2){
+
+            const p =
+                [...storyPointers.values()];
+
+            storyGesture = {
+
+                type:"pinch",
+
+                distance:distance(
+                    p[0],
+                    p[1]
+                ),
+
+                scale:storyScale,
+
+                center:midpoint(
+                    p[0],
+                    p[1]
+                ),
+
+                x:storyX,
+                y:storyY
+
+            };
+
+        }
+
+    }
+);
+
+
+storyViewerArea.addEventListener(
+    "pointermove",
+    e => {
+
+        if(
+            !storyPointers.has(
+                e.pointerId
+            )
+        ){
+            return;
+        }
+
+
+        storyPointers.set(
+            e.pointerId,
+            {
+                x:e.clientX,
+                y:e.clientY
+            }
+        );
+
+
+        const col =
+            selectedStoryIndex % 10;
+
+        const row =
+            Math.floor(
+                selectedStoryIndex / 10
+            );
+
+
+        if(
+            storyPointers.size === 1 &&
+            storyGesture?.type === "move"
+        ){
+
+            storyX =
+                storyGesture.oldX +
+                (
+                    e.clientX -
+                    storyGesture.x
+                );
+
+            storyY =
+                storyGesture.oldY +
+                (
+                    e.clientY -
+                    storyGesture.y
+                );
+
+        }
+
+
+        if(
+            storyPointers.size === 2 &&
+            storyGesture?.type === "pinch"
+        ){
+
+            const p =
+                [...storyPointers.values()];
+
+            const d =
+                distance(
+                    p[0],
+                    p[1]
+                );
+
+
+            let ns =
+                storyGesture.scale *
+                (
+                    d /
+                    storyGesture.distance
+                );
+
+
+            ns =
+                Math.max(
+                    .5,
+                    Math.min(
+                        30,
+                        ns
+                    )
+                );
+
+
+            const center =
+                midpoint(
+                    p[0],
+                    p[1]
+                );
+
+
+            const ratio =
+                ns /
+                storyGesture.scale;
+
+
+            storyX =
+                center.x -
+                (
+                    center.x -
+                    storyGesture.x
+                ) * ratio;
+
+
+            storyY =
+                center.y -
+                (
+                    center.y -
+                    storyGesture.y
+                ) * ratio;
+
+
+            storyScale =
+                ns;
+
+        }
+
+
+        selectedStory.style.transform =
+            `translate(
+                calc(${-col*10}% + ${storyX}px),
+                calc(${-row*10}% + ${storyY}px)
+            ) scale(${storyScale})`;
+
+
+        document.getElementById(
+            "storyZoomText"
+        ).textContent =
+            Math.round(
+                storyScale*100
+            ) + "%";
+
+    }
+);
+
+
+[
+    "pointerup",
+    "pointercancel",
+    "lostpointercapture"
+].forEach(eventName => {
+
+    storyViewerArea.addEventListener(
+        eventName,
+        e => {
+
+            storyPointers.delete(
+                e.pointerId
+            );
+
+            if(storyPointers.size === 0){
+                storyGesture = null;
+            }
+
+        }
+    );
+
+});
+
+
+storyViewerArea.addEventListener(
+    "wheel",
+    e => {
+
+        e.preventDefault();
+
+        const old =
+            storyScale;
+
+        let ns =
+            old *
+            (
+                e.deltaY < 0
+                ? 1.15
+                : .87
+            );
+
+
+        ns =
+            Math.max(
+                .5,
+                Math.min(
+                    30,
+                    ns
+                )
+            );
+
+
+        const ratio =
+            ns / old;
+
+
+        storyX =
+            e.clientX -
+            (
+                e.clientX -
+                storyX
+            ) * ratio;
+
+
+        storyY =
+            e.clientY -
+            (
+                e.clientY -
+                storyY
+            ) * ratio;
+
+
+        storyScale =
+            ns;
+
+
+        const col =
+            selectedStoryIndex % 10;
+
+        const row =
+            Math.floor(
+                selectedStoryIndex / 10
+            );
+
+
+        selectedStory.style.transform =
+            `translate(
+                calc(${-col*10}% + ${storyX}px),
+                calc(${-row*10}% + ${storyY}px)
+            ) scale(${storyScale})`;
+
+
+        document.getElementById(
+            "storyZoomText"
+        ).textContent =
+            Math.round(
+                storyScale*100
+            ) + "%";
+
+    },
+    {passive:false}
+);
+
+
+/* =====================================
+   크롭
+===================================== */
+
+let cropMode = false;
+let cropStep = 0;
+let cropStart = null;
+let cropRects = [];
+
+const cropOverlay =
+document.getElementById("cropOverlay");
+
+const cropSelection =
+document.getElementById("cropSelection");
+
+const cropInstruction =
+document.getElementById("cropInstruction");
+
+
+function startCrop(){
+
+    videoScreen.style.display =
+        "block";
+
+    cropMode = true;
+
+    cropStep = 0;
+
+    cropStart = null;
+
+    cropRects = [];
+
+    cropSelection.style.display =
+        "none";
+
+    cropOverlay.style.display =
+        "block";
+
+    setVideoMode("view");
+
+    updateCropInstruction();
+
+}
+
+
+document
+.getElementById("cropStartButton")
+.addEventListener(
+    "click",
+    startCrop
+);
+
+
+document
+.getElementById("settingsCrop")
+.addEventListener(
+    "click",
+    () => {
+
+        settingsPanel.style.display =
+            "none";
+
+        startCrop();
+
+    }
+);
+
+
+function updateCropInstruction(){
+
+    const names = [
+        "영상",
+        "영상 길이 바",
+        "설정 바"
+    ];
+
+
+    if(cropStep < 3){
+
+        cropInstruction.innerHTML =
+            `<b>${cropStep+1} / 3</b> — ${names[cropStep]} 영역을 드래그하세요.`;
+
+        cropInstruction.style.display =
+            "block";
+
+    }
+
+}
+
+
+videoArea.addEventListener(
+    "pointerdown",
+    e => {
+
+        if(!cropMode){
+            return;
+        }
+
+
+        if(
+            e.target.closest("#videoToolbar")
+        ){
+            return;
+        }
+
+
+        const rect =
+            videoArea.getBoundingClientRect();
+
+
+        cropStart = {
+
+            x:Math.max(
+                0,
+                Math.min(
+                    rect.width,
+                    e.clientX-rect.left
+                )
+            ),
+
+            y:Math.max(
+                0,
+                Math.min(
+                    rect.height,
+                    e.clientY-rect.top
+                )
+            )
+
+        };
+
+
+        cropSelection.style.left =
+            cropStart.x+"px";
+
+        cropSelection.style.top =
+            cropStart.y+"px";
+
+        cropSelection.style.width =
+            "0px";
+
+        cropSelection.style.height =
+            "0px";
+
+        cropSelection.style.display =
+            "block";
+
+
+        videoArea.setPointerCapture?.(
+            e.pointerId
+        );
+
+    }
+);
+
+
+videoArea.addEventListener(
+    "pointermove",
+    e => {
+
+        if(
+            !cropMode ||
+            !cropStart
+        ){
+            return;
+        }
+
+
+        const rect =
+            videoArea.getBoundingClientRect();
+
+
+        const x =
+            Math.max(
+                0,
+                Math.min(
+                    rect.width,
+                    e.clientX-rect.left
+                )
+            );
+
+
+        const y =
+            Math.max(
+                0,
+                Math.min(
+                    rect.height,
+                    e.clientY-rect.top
+                )
+            );
+
+
+        const left =
+            Math.min(
+                cropStart.x,
+                x
+            );
+
+        const top =
+            Math.min(
+                cropStart.y,
+                y
+            );
+
+        const width =
+            Math.abs(
+                x-cropStart.x
+            );
+
+        const height =
+            Math.abs(
+                y-cropStart.y
+            );
+
+
+        cropSelection.style.left =
+            left+"px";
+
+        cropSelection.style.top =
+            top+"px";
+
+        cropSelection.style.width =
+            width+"px";
+
+        cropSelection.style.height =
+            height+"px";
+
+    }
+);
+
+
+videoArea.addEventListener(
+    "pointerup",
+    e => {
+
+        if(
+            !cropMode ||
+            !cropStart
+        ){
+            return;
+        }
+
+
+        const rect =
+            videoArea.getBoundingClientRect();
+
+
+        const x =
+            Math.max(
+                0,
+                Math.min(
+                    rect.width,
+                    e.clientX-rect.left
+                )
+            );
+
+
+        const y =
+            Math.max(
+                0,
+                Math.min(
+                    rect.height,
+                    e.clientY-rect.top
+                )
+            );
+
+
+        const left =
+            Math.min(
+                cropStart.x,
+                x
+            );
+
+        const top =
+            Math.min(
+                cropStart.y,
+                y
+            );
+
+        const width =
+            Math.abs(
+                x-cropStart.x
+            );
+
+        const height =
+            Math.abs(
+                y-cropStart.y
+            );
+
+
+        cropStart = null;
+
+        cropSelection.style.display =
+            "none";
+
+
+        if(
+            width < 8 ||
+            height < 8
+        ){
+            return;
+        }
+
+
+        cropRects.push({
+
+            x:left/rect.width,
+            y:top/rect.height,
+            w:width/rect.width,
+            h:height/rect.height
+
+        });
+
+
+        cropStep++;
+
+
+        if(cropStep < 3){
+
+            updateCropInstruction();
+
+        }else{
+
+            cropInstruction.innerHTML =
+                "<b>3 / 3 완료</b> — 저장을 누르세요.";
+
+        }
+
+    }
+);
+
+
+/* =====================================
+   크롭 저장
+===================================== */
+
+document
+.getElementById("cropSaveButton")
+.addEventListener(
+    "click",
+    saveCrop
+);
+
+
+function saveCrop(){
+
+    if(!cropMode){
+        return;
+    }
+
+
+    if(cropRects.length !== 3){
+
+        cropInstruction.innerHTML =
+            "<b>오류</b> — 3개 영역을 모두 지정하세요.";
+
+        return;
+
+    }
+
+
+    localStorage.setItem(
+        "milaCrop",
+        JSON.stringify(cropRects)
+    );
+
+
+    cropMode = false;
+
+    cropInstruction.style.display =
+        "none";
+
+    cropOverlay.style.display =
+        "none";
+
+    cropSelection.style.display =
+        "none";
+
+    settingsPanel.style.display =
+        "none";
+
+
+    applySavedCrop();
+
+}
+
+
+/* =====================================
+   저장된 크롭
+===================================== */
+
+function loadCrop(){
+
+    try{
+
+        const data =
+            JSON.parse(
+                localStorage.getItem(
+                    "milaCrop"
+                ) || "[]"
+            );
+
+
+        if(
+            Array.isArray(data) &&
+            data.length === 3
+        ){
+
+            cropRects = data;
+
+            applySavedCrop();
+
+        }
+
+    }catch(error){
+
+        cropRects = [];
+
+    }
+
+}
+
+
+function applySavedCrop(){
+
+    /*
+      외부 iframe 내부의 실제 DOM은
+      다른 도메인이므로 직접 조작할 수 없다.
+      따라서 저장된 좌표를 보존한다.
+    */
+
+    if(
+        !Array.isArray(cropRects) ||
+        cropRects.length !== 3
+    ){
+
+        videoFrame.style.clipPath =
+            "none";
+
+        return;
+
+    }
+
+    /*
+      iframe 내부 요소에 직접 접근할 수 없는 경우에도
+      지정 좌표 자체는 localStorage에 유지된다.
+    */
+
+    videoFrame.style.clipPath =
+        "none";
+
+}
+
+
+/* =====================================
+   크롭 해제
+===================================== */
+
+document
+.getElementById("settingsCropClear")
+.addEventListener(
+    "click",
+    () => {
+
+        localStorage.removeItem(
+            "milaCrop"
+        );
+
+        cropRects = [];
+
+        cropMode = false;
+
+        cropOverlay.style.display =
+            "none";
+
+        cropInstruction.style.display =
+            "none";
+
+        videoFrame.style.clipPath =
+            "none";
+
+    }
+);
+
+
+/* =====================================
+   팝업
+===================================== */
+
+document
+.getElementById("popupOpen")
+.addEventListener(
+    "click",
+    openPopup
+);
+
+
+function openPopup(){
+
+    videoScreen.style.display =
+        "none";
+
+    home.style.display =
+        "none";
+
+    openRoro();
+
+
+    popupVideo.src =
+        VIDEO_URL;
+
+    popupControl.src =
+        VIDEO_URL;
+
+
+    videoPopup.style.display =
+        "block";
+
+}
+
+
+document
+.getElementById("popupClose")
+.addEventListener(
+    "click",
+    closePopup
+);
+
+
+function closePopup(){
+
+    videoPopup.style.display =
+        "none";
+
+    popupVideo.src =
+        "about:blank";
+
+    popupControl.src =
+        "about:blank";
+
+}
+
+
+/* =====================================
+   팝업 이동
+===================================== */
+
+let popupDrag = null;
+
+
+document
+.getElementById("popupDrag")
+.addEventListener(
+    "pointerdown",
+    e => {
+
+        const rect =
+            videoPopup.getBoundingClientRect();
+
+
+        popupDrag = {
+
+            pointer:e.pointerId,
+
+            startX:e.clientX,
+            startY:e.clientY,
+
+            left:rect.left,
+            top:rect.top
+
+        };
+
+
+        e.currentTarget.setPointerCapture?.(
+            e.pointerId
+        );
+
+    }
+);
+
+
+document
+.getElementById("popupDrag")
+.addEventListener(
+    "pointermove",
+    e => {
+
+        if(
+            !popupDrag ||
+            popupDrag.pointer !== e.pointerId
+        ){
+            return;
+        }
+
+
+        let left =
+            popupDrag.left +
+            (
+                e.clientX -
+                popupDrag.startX
+            );
+
+
+        let top =
+            popupDrag.top +
+            (
+                e.clientY -
+                popupDrag.startY
+            );
+
+
+        left =
+            Math.max(
+                0,
+                Math.min(
+                    window.innerWidth -
+                    videoPopup.offsetWidth,
+                    left
+                )
+            );
+
+
+        top =
+            Math.max(
+                0,
+                Math.min(
+                    window.innerHeight -
+                    videoPopup.offsetHeight,
+                    top
+                )
+            );
+
+
+        videoPopup.style.left =
+            left+"px";
+
+        videoPopup.style.top =
+            top+"px";
+
+        videoPopup.style.right =
+            "auto";
+
+        videoPopup.style.bottom =
+            "auto";
+
+    }
+);
+
+
+[
+    "pointerup",
+    "pointercancel"
+].forEach(eventName => {
+
+    document
+    .getElementById("popupDrag")
+    .addEventListener(
+        eventName,
+        () => {
+
+            popupDrag = null;
+
+        }
+    );
+
+});
+
+
+/* =====================================
+   팝업 크기
+===================================== */
+
+let popupResize = null;
+
+
+document
+.getElementById("popupResize")
+.addEventListener(
+    "pointerdown",
+    e => {
+
+        const rect =
+            videoPopup.getBoundingClientRect();
+
+
+        popupResize = {
+
+            pointer:e.pointerId,
+
+            startX:e.clientX,
+            startY:e.clientY,
+
+            width:rect.width,
+            height:rect.height
+
+        };
+
+
+        e.currentTarget.setPointerCapture?.(
+            e.pointerId
+        );
+
+    }
+);
+
+
+document
+.getElementById("popupResize")
+.addEventListener(
+    "pointermove",
+    e => {
+
+        if(
+            !popupResize ||
+            popupResize.pointer !== e.pointerId
+        ){
+            return;
+        }
+
+
+        const width =
+            Math.max(
+                190,
+                popupResize.width +
+                (
+                    e.clientX -
+                    popupResize.startX
+                )
+            );
+
+
+        const height =
+            Math.max(
+                130,
+                popupResize.height +
+                (
+                    e.clientY -
+                    popupResize.startY
+                )
+            );
+
+
+        videoPopup.style.width =
+            Math.min(
+                window.innerWidth-10,
+                width
+            )+"px";
+
+
+        videoPopup.style.height =
+            Math.min(
+                window.innerHeight-10,
+                height
+            )+"px";
+
+    }
+);
+
+
+[
+    "pointerup",
+    "pointercancel"
+].forEach(eventName => {
+
+    document
+    .getElementById("popupResize")
+    .addEventListener(
+        eventName,
+        () => {
+
+            popupResize = null;
+
+        }
+    );
+
+});
+
+
+/* =====================================
+   초기화
+===================================== */
+
+loadSavedData();
+
+</script>
+
+</body>
+  </html>
