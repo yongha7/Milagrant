@@ -1,1 +1,523 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Mila Video</title>
+<style>
+*{box-sizing:border-box}
+:root{color-scheme:dark}
+html,body{margin:0;width:100%;height:100%;background:#090b10;color:#f5f6fa;font-family:Arial,sans-serif;overflow:hidden}
+button,input,textarea{font:inherit}
+button{border:1px solid #353b4a;background:#1b202b;color:#fff;border-radius:9px;padding:9px 12px;cursor:pointer}
+button:active{transform:scale(.98)}
+button.active{background:#6455e8;border-color:#8175ff}
+input,textarea{background:#141923;border:1px solid #353b4a;color:#fff;border-radius:8px;padding:10px;width:100%}
+#gate{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:#090b10;padding:20px}
+.gatebox{width:min(360px,100%);background:#141923;padding:24px;border-radius:16px;border:1px solid #303748}
+.gatebox h2{margin-top:0}
+#app{display:none;height:100dvh;flex-direction:column}
+header{flex:none;padding:8px 10px;display:flex;align-items:center;gap:8px;background:#11151e;border-bottom:1px solid #292f3d;min-height:48px}
+.brand{font-weight:800;white-space:nowrap;font-size:14px}
+#headerTitle{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;color:#b8c0d2;font-size:13px}
+#videoScreen{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;background:#000}
+#videoStage{position:relative;flex:1;min-height:0;overflow:hidden;background:#000;touch-action:pan-y}
+#videoFrame{position:absolute;left:0;top:0;width:100%;height:100%;border:0;background:#000}
+#cropBox{position:absolute;z-index:6;border:2px solid #8b7cff;background:transparent;display:none;pointer-events:none;box-shadow:0 0 0 9999px #0009}
+#cropHint{position:absolute;z-index:7;top:8px;left:8px;right:8px;text-align:center;padding:8px;background:#161a26ef;border:1px solid #5b52a7;border-radius:8px;display:none;font-size:12px}
+#bottomBar{display:flex;gap:6px;flex-wrap:wrap;padding:8px;background:#11151e;border-top:1px solid #292f3d;justify-content:center}
+#bottomBar button{font-size:12px;padding:8px 10px}
+#description{padding:7px 12px;background:#11151e;color:#adb5c8;font-size:12px;max-height:48px;overflow:auto;white-space:pre-wrap}
+.panel{position:fixed;inset:0;z-index:50;background:#0009;display:none;align-items:center;justify-content:center;padding:14px}
+.panel.show{display:flex}
+.dialog{width:min(520px,100%);max-height:90dvh;overflow:auto;background:#151a25;border:1px solid #353c50;border-radius:15px;padding:16px}
+.dialog h3{margin:0 0 14px}
+.field{margin:12px 0}
+.field label{display:block;font-size:12px;color:#bbc3d4;margin-bottom:6px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.row>*{flex:1}
+.small{font-size:12px;color:#aab3c6;line-height:1.5}
+#storyboardScreen{position:fixed;inset:0;z-index:30;background:#0a0d13;display:none;flex-direction:column}
+#storyboardScreen.show{display:flex}
+.storyhead{display:flex;align-items:center;gap:7px;padding:10px;background:#141923;flex-wrap:wrap}
+.storyhead strong{flex:1;min-width:80px}
+#storyCounter{font-size:12px;color:#b9c2d5;white-space:nowrap}
+#storyGrid{padding:10px;overflow:auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.storyCell{aspect-ratio:1;background:#171d28;border:1px solid #353b49;border-radius:7px;overflow:hidden;padding:0;position:relative;min-width:0}
+.storyCell img{width:100%;height:100%;object-fit:cover}
+.storyCell span{position:absolute;bottom:0;left:0;right:0;background:#000b;font-size:10px;padding:4px}
+.storyCell.selected{border:2px solid #9588ff}
+#storyImageArea{display:none;flex:1;min-height:0;align-items:center;justify-content:center;overflow:hidden;position:relative;background:#050608}
+#storyImageArea img{max-width:100%;max-height:100%;object-fit:contain;user-select:none;-webkit-user-drag:none}
+.storyNav{display:flex;gap:8px;align-items:center;justify-content:center;padding:9px;background:#11151e}
+.storyNav button{flex:1;max-width:190px}
+#detailScreen{position:fixed;inset:0;z-index:40;background:#050608;display:none;flex-direction:column}
+#detailScreen.show{display:flex}
+.detailhead{display:flex;align-items:center;gap:6px;padding:8px;background:#11151e;flex-wrap:wrap}
+#detailTitle{flex:1;min-width:70px}
+#detailCounter{font-size:12px;color:#bdc5d7;white-space:nowrap}
+#detailViewport{flex:1;min-height:0;overflow:hidden;display:flex;align-items:center;justify-content:center;touch-action:none;position:relative}
+#detailImage{max-width:100%;max-height:100%;object-fit:contain;transform-origin:center;user-select:none;-webkit-user-drag:none}
+.detailnav{display:flex;gap:8px;justify-content:center;padding:9px;background:#11151e}
+.detailnav button{flex:1;max-width:200px}
+@media(min-width:700px){
+ #storyGrid{grid-template-columns:repeat(8,minmax(0,1fr))}
+ .storyCell span{font-size:12px}
+}
+</style>
+</head>
+<body>
 
+<div id="gate">
+ <div class="gatebox">
+  <h2>Mila Video</h2>
+  <p class="small">접속 비밀번호를 입력하세요.</p>
+  <input id="passwordInput" type="password" placeholder="비밀번호" autocomplete="off">
+  <div class="row"><button id="unlockBtn" class="active">입장</button></div>
+  <p id="gateError" class="small"></p>
+ </div>
+</div>
+
+<div id="app">
+ <header>
+  <div class="brand">MILA VIDEO</div>
+  <div id="headerTitle">mila grant prison intake</div>
+  <button id="menuBtn">설정</button>
+ </header>
+
+ <main id="videoScreen">
+  <div id="videoStage">
+   <iframe id="videoFrame"
+    src="https://u.pcloud.link/publink/show?code=XZlxhzJZrigVSStpBFR7SU4aCsHBo01eFvFV"
+    allow="autoplay; fullscreen; picture-in-picture"
+    allowfullscreen
+    referrerpolicy="strict-origin-when-cross-origin"></iframe>
+   <div id="cropBox"></div>
+   <div id="cropHint">크롭할 영역을 드래그하세요.</div>
+  </div>
+  <div id="description"></div>
+  <div id="bottomBar">
+   <button id="clickMode" class="active">클릭</button>
+   <button id="zoomMode">확대</button>
+   <button id="viewMode">보기</button>
+   <button id="cropBtn">크롭 설정</button>
+   <button id="storyBtn">스토리보드</button>
+  </div>
+ </main>
+</div>
+
+<div class="panel" id="settingsPanel">
+ <div class="dialog">
+  <h3>설정</h3>
+  <div class="field"><label>제목</label><input id="titleInput" value="mila grant prison intake"></div>
+  <div class="field"><label>설명</label><textarea id="descInput" rows="3" placeholder="영상 설명"></textarea></div>
+  <div class="row"><button id="saveTextBtn" class="active">제목·설명 저장</button><button id="closeSettingsBtn">닫기</button></div>
+  <hr style="border-color:#303747;margin:18px 0">
+  <h3>크롭 설정</h3>
+  <p class="small">영역 지정을 누른 다음 영상 화면에서 사각형을 드래그하세요. 적용한 영역은 저장됩니다.</p>
+  <div class="row"><button id="startCropBtn" class="active">영역 지정</button><button id="applyCropBtn">크롭 적용</button></div>
+  <div class="row"><button id="resetCropBtn">크롭 초기화</button><button id="closeSettingsBtn2">닫기</button></div>
+  <p class="small" id="cropStatus"></p>
+ </div>
+</div>
+
+<div id="storyboardScreen">
+ <div class="storyhead">
+  <strong id="storyHeaderTitle">메인 스토리보드</strong>
+  <span id="storyCounter">1 / 100</span>
+  <button id="storyPrev">◀ 이전</button>
+  <button id="storyNext" class="active">다음 ▶</button>
+  <button id="storySwitch">세부 목록</button>
+  <button id="closeStoryBtn">닫기</button>
+ </div>
+
+ <div id="storyGrid"></div>
+
+ <div id="storyImageArea">
+  <img id="storyMainImage" alt="스토리보드 이미지">
+ </div>
+
+ <div class="storyNav">
+  <button id="storyBottomPrev">◀ 이전 이미지</button>
+  <button id="storyBottomNext" class="active">다음 이미지 ▶</button>
+ </div>
+ <p class="small" style="padding:0 12px;margin:0 0 8px">
+  이미지 파일은 HTML과 같은 폴더에 둡니다. 메인: storyboard.png · 세부: storyboard_0001.jpg ~ storyboard_0020.jpg
+ </p>
+</div>
+
+<div id="detailScreen">
+ <div class="detailhead">
+  <button id="detailBack">목록</button>
+  <strong id="detailTitle">이미지</strong>
+  <span id="detailCounter">1 / 20</span>
+  <button id="detailReset">초기화</button>
+  <button id="detailClose">닫기</button>
+ </div>
+ <div id="detailViewport">
+  <img id="detailImage" alt="스토리보드 이미지">
+ </div>
+ <div class="detailnav">
+  <button id="detailPrev">◀ 이전 스토리보드</button>
+  <button id="detailNext" class="active">다음 스토리보드 ▶</button>
+ </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const STORAGE_KEY = "mila_video_app_v3";
+let saved = {};
+try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") || {}; }
+catch(e) { saved = {}; }
+
+const data = {
+ title: saved.title || "mila grant prison intake",
+ description: saved.description || "",
+ crop: saved.crop || null,
+ mode: saved.mode || "click"
+};
+
+function persist(){
+ try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data));}
+ catch(e){console.warn("저장하지 못했습니다.",e);}
+}
+
+function unlock(){
+ if($("passwordInput").value==="mila130102!"){
+  $("gate").style.display="none";
+  $("app").style.display="flex";
+  $("titleInput").value=data.title;
+  $("descInput").value=data.description;
+  $("headerTitle").textContent=data.title;
+  $("description").textContent=data.description;
+  applyCrop();
+  setMode(data.mode);
+ }else $("gateError").textContent="비밀번호가 올바르지 않습니다.";
+}
+$("unlockBtn").addEventListener("click",unlock);
+$("passwordInput").addEventListener("keydown",e=>{if(e.key==="Enter")unlock();});
+
+function closeSettings(){$("settingsPanel").classList.remove("show");}
+$("menuBtn").addEventListener("click",()=>{
+ $("settingsPanel").classList.add("show");
+ updateCropStatus();
+});
+$("closeSettingsBtn").addEventListener("click",closeSettings);
+$("closeSettingsBtn2").addEventListener("click",closeSettings);
+
+$("saveTextBtn").addEventListener("click",()=>{
+ data.title=$("titleInput").value.trim()||"Mila Video";
+ data.description=$("descInput").value;
+ $("headerTitle").textContent=data.title;
+ $("description").textContent=data.description;
+ persist();
+});
+
+function setMode(mode){
+ data.mode=mode;
+ $("clickMode").classList.toggle("active",mode==="click");
+ $("zoomMode").classList.toggle("active",mode==="zoom");
+ $("viewMode").classList.toggle("active",mode==="view");
+ $("videoFrame").style.pointerEvents=mode==="click"?"auto":"none";
+ $("videoStage").style.touchAction=mode==="zoom"?"none":"auto";
+ persist();
+}
+$("clickMode").addEventListener("click",()=>setMode("click"));
+$("zoomMode").addEventListener("click",()=>setMode("zoom"));
+$("viewMode").addEventListener("click",()=>setMode("view"));
+
+/* 크롭: iframe의 표시 영역에 CSS clip-path 적용 */
+function applyCrop(){
+ const frame=$("videoFrame"),c=data.crop;
+ if(!c||c.w<=0||c.h<=0){
+  frame.style.clipPath="none";
+  frame.style.webkitClipPath="none";
+  $("cropBox").style.display="none";
+  return;
+ }
+ const x=Math.max(0,Math.min(1,c.x));
+ const y=Math.max(0,Math.min(1,c.y));
+ const w=Math.max(0,Math.min(1-x,c.w));
+ const h=Math.max(0,Math.min(1-y,c.h));
+ frame.style.clipPath=`inset(${y*100}% ${(1-x-w)*100}% ${(1-y-h)*100}% ${x*100}%)`;
+ frame.style.webkitClipPath=frame.style.clipPath;
+ $("cropBox").style.display="none";
+}
+let cropDrawing=false,cropStart=null,cropPreview=null;
+
+function startCrop(){
+ closeSettings();
+ cropDrawing=true;
+ cropStart=null;
+ cropPreview=null;
+ $("cropHint").style.display="block";
+ $("cropBox").style.display="none";
+ $("videoStage").style.cursor="crosshair";
+ $("videoStage").style.touchAction="none";
+}
+$("startCropBtn").addEventListener("click",startCrop);
+$("cropBtn").addEventListener("click",startCrop);
+
+function stagePoint(e){
+ const r=$("videoStage").getBoundingClientRect();
+ return {x:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),y:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))};
+}
+function drawCropPreview(){
+ if(!cropPreview)return;
+ const r=$("videoStage").getBoundingClientRect(),b=$("cropBox"),c=cropPreview;
+ b.style.display="block";
+ b.style.left=(c.x*r.width)+"px";
+ b.style.top=(c.y*r.height)+"px";
+ b.style.width=(c.w*r.width)+"px";
+ b.style.height=(c.h*r.height)+"px";
+}
+$("videoStage").addEventListener("pointerdown",e=>{
+ if(!cropDrawing)return;
+ e.preventDefault();
+ cropStart=stagePoint(e);
+ cropPreview={x:cropStart.x,y:cropStart.y,w:0,h:0};
+ try{$("videoStage").setPointerCapture(e.pointerId);}catch(_){}
+ drawCropPreview();
+});
+$("videoStage").addEventListener("pointermove",e=>{
+ if(!cropDrawing||!cropStart)return;
+ e.preventDefault();
+ const p=stagePoint(e);
+ cropPreview={x:Math.min(cropStart.x,p.x),y:Math.min(cropStart.y,p.y),w:Math.abs(p.x-cropStart.x),h:Math.abs(p.y-cropStart.y)};
+ drawCropPreview();
+});
+function finishCrop(){
+ if(!cropDrawing||!cropPreview)return;
+ if(cropPreview.w>.02&&cropPreview.h>.02)data.crop={...cropPreview};
+ cropDrawing=false;cropStart=null;cropPreview=null;
+ $("cropHint").style.display="none";
+ $("videoStage").style.cursor="";
+ $("videoStage").style.touchAction=data.mode==="zoom"?"none":"auto";
+ $("cropBox").style.display="none";
+ applyCrop();persist();updateCropStatus();
+}
+$("videoStage").addEventListener("pointerup",finishCrop);
+$("videoStage").addEventListener("pointercancel",finishCrop);
+$("applyCropBtn").addEventListener("click",()=>{
+ if(cropPreview&&cropPreview.w>.02&&cropPreview.h>.02)data.crop={...cropPreview};
+ if(!data.crop){$("cropStatus").textContent="먼저 크롭 영역을 지정하세요.";return;}
+ cropDrawing=false;cropStart=null;cropPreview=null;
+ $("cropHint").style.display="none";
+ $("videoStage").style.cursor="";
+ applyCrop();persist();updateCropStatus();closeSettings();
+});
+$("resetCropBtn").addEventListener("click",()=>{
+ data.crop=null;cropDrawing=false;cropStart=null;cropPreview=null;
+ $("cropHint").style.display="none";
+ $("cropBox").style.display="none";
+ $("videoStage").style.cursor="";
+ applyCrop();persist();updateCropStatus();
+});
+function updateCropStatus(){
+ $("cropStatus").textContent=data.crop
+ ?"크롭 저장됨 · X "+Math.round(data.crop.x*100)+"% / Y "+Math.round(data.crop.y*100)+"% / 너비 "+Math.round(data.crop.w*100)+"% / 높이 "+Math.round(data.crop.h*100)+"%"
+ :"크롭 미적용 상태입니다.";
+}
+
+/* 스토리보드 화면
+   메인 이미지 100개 구역은 storyboard.png 한 장을 참조하며,
+   세부 스토리보드는 개별 jpg 20개를 순서대로 엽니다.
+*/
+let storyPage="main";
+let mainIndex=0;
+let detailIndex=1;
+let detailOrigin="list";
+
+function showStoryboard(){
+ $("storyboardScreen").classList.add("show");
+ storyPage="main";
+ mainIndex=0;
+ renderStoryPage();
+}
+$("storyBtn").addEventListener("click",showStoryboard);
+$("closeStoryBtn").addEventListener("click",()=>$("storyboardScreen").classList.remove("show"));
+
+function mainImagePath(){return "storyboard.png";}
+function detailImagePath(n){return "storyboard_"+String(n).padStart(4,"0")+".jpg";}
+
+function renderStoryPage(){
+ const grid=$("storyGrid"),imageArea=$("storyImageArea");
+ const isMain=storyPage==="main";
+ $("storyHeaderTitle").textContent=isMain?"메인 스토리보드":"세부 스토리보드";
+ $("storySwitch").textContent=isMain?"세부 목록":"메인 목록";
+ $("storyCounter").textContent=isMain?(mainIndex+1)+" / 100":detailIndex+" / 20";
+ $("storyPrev").disabled=isMain?mainIndex===0:detailIndex===1;
+ $("storyNext").disabled=isMain?mainIndex===99:detailIndex===20;
+ $("storyBottomPrev").disabled=isMain?mainIndex===0:detailIndex===1;
+ $("storyBottomNext").disabled=isMain?mainIndex===99:detailIndex===20;
+
+ if(isMain){
+  grid.style.display="grid";
+  imageArea.style.display="none";
+  buildMainGrid();
+ }else{
+  grid.style.display="none";
+  imageArea.style.display="flex";
+  $("storyMainImage").src=detailImagePath(detailIndex);
+  $("storyMainImage").alt="세부 스토리보드 "+detailIndex;
+ }
+}
+
+function buildMainGrid(){
+ const grid=$("storyGrid");
+ if(grid.dataset.mainBuilt==="1"){
+  [...grid.children].forEach((b,i)=>b.classList.toggle("selected",i===mainIndex));
+  const selected=grid.children[mainIndex];
+  if(selected)selected.scrollIntoView({block:"nearest",inline:"nearest"});
+  return;
+ }
+ grid.dataset.mainBuilt="1";
+ for(let i=0;i<100;i++){
+  const b=document.createElement("button");
+  b.className="storyCell";
+  const img=document.createElement("img");
+  img.src=mainImagePath();
+  img.alt="메인 스토리보드";
+  img.loading="lazy";
+  b.appendChild(img);
+  const label=document.createElement("span");
+  label.textContent="메인 "+String(i+1).padStart(2,"0");
+  b.appendChild(label);
+  b.addEventListener("click",()=>{
+   mainIndex=i;
+   renderStoryPage();
+   openDetail(mainImagePath(),"메인 스토리보드 "+(i+1),i,"main");
+  });
+  grid.appendChild(b);
+ }
+ [...grid.children].forEach((b,i)=>b.classList.toggle("selected",i===mainIndex));
+}
+
+$("storySwitch").addEventListener("click",()=>{
+ storyPage=storyPage==="main"?"detail":"main";
+ renderStoryPage();
+});
+function storyStep(delta){
+ if(storyPage==="main")mainIndex=Math.max(0,Math.min(99,mainIndex+delta));
+ else detailIndex=Math.max(1,Math.min(20,detailIndex+delta));
+ renderStoryPage();
+}
+$("storyPrev").addEventListener("click",()=>storyStep(-1));
+$("storyNext").addEventListener("click",()=>storyStep(1));
+$("storyBottomPrev").addEventListener("click",()=>storyStep(-1));
+$("storyBottomNext").addEventListener("click",()=>storyStep(1));
+
+$("storyMainImage").addEventListener("click",()=>{
+ openDetail(detailImagePath(detailIndex),"세부 스토리보드 "+detailIndex,detailIndex-1,"detail");
+});
+
+/* 상세 이미지 뷰어 */
+let detailScale=1,detailX=0,detailY=0;
+let detailPointers=new Map(),detailPinch=null,detailSwipeStart=null;
+
+function openDetail(src,title,index,origin){
+ detailOrigin=origin||"list";
+ if(detailOrigin==="detail")detailIndex=index+1;
+ else if(detailOrigin==="main")mainIndex=index;
+ $("detailImage").src=src;
+ $("detailTitle").textContent=title;
+ $("detailScreen").classList.add("show");
+ resetDetail();
+ updateDetailCounter();
+}
+function resetDetail(){detailScale=1;detailX=0;detailY=0;renderDetail();}
+function renderDetail(){
+ $("detailImage").style.transform=`translate(${detailX}px,${detailY}px) scale(${detailScale})`;
+}
+function updateDetailCounter(){
+ if(detailOrigin==="main"){
+  $("detailCounter").textContent=(mainIndex+1)+" / 100";
+ }else{
+  $("detailCounter").textContent=detailIndex+" / 20";
+ }
+}
+function closeDetail(){
+ $("detailScreen").classList.remove("show");
+}
+$("detailClose").addEventListener("click",closeDetail);
+$("detailBack").addEventListener("click",closeDetail);
+$("detailReset").addEventListener("click",resetDetail);
+
+function moveDetail(delta){
+ if(detailOrigin==="main"){
+  mainIndex=Math.max(0,Math.min(99,mainIndex+delta));
+  $("detailImage").src=mainImagePath();
+  $("detailTitle").textContent="메인 스토리보드 "+(mainIndex+1);
+ }else{
+  detailIndex=Math.max(1,Math.min(20,detailIndex+delta));
+  $("detailImage").src=detailImagePath(detailIndex);
+  $("detailTitle").textContent="세부 스토리보드 "+detailIndex;
+ }
+ resetDetail();
+ updateDetailCounter();
+ if(storyPage==="main"||storyPage==="detail")renderStoryPage();
+}
+$("detailPrev").addEventListener("click",()=>moveDetail(-1));
+$("detailNext").addEventListener("click",()=>moveDetail(1));
+
+const viewport=$("detailViewport");
+viewport.addEventListener("pointerdown",e=>{
+ try{viewport.setPointerCapture(e.pointerId);}catch(_){}
+ detailPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(detailPointers.size===1)detailSwipeStart={x:e.clientX,y:e.clientY};
+ if(detailPointers.size===2){
+  const p=[...detailPointers.values()];
+  detailPinch={distance:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y),scale:detailScale};
+ }
+});
+viewport.addEventListener("pointermove",e=>{
+ if(!detailPointers.has(e.pointerId))return;
+ const old=detailPointers.get(e.pointerId);
+ detailPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(detailPointers.size>=2&&detailPinch){
+  const p=[...detailPointers.values()];
+  const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);
+  detailScale=Math.max(.5,Math.min(8,detailPinch.scale*d/Math.max(1,detailPinch.distance)));
+  renderDetail();
+ }else if(detailScale>1){
+  detailX+=e.clientX-old.x;detailY+=e.clientY-old.y;renderDetail();
+ }
+});
+function endDetailPointer(e){
+ const start=detailSwipeStart;
+ const p=detailPointers.get(e.pointerId);
+ if(detailPointers.size===1&&start&&p&&detailScale<=1.05){
+  const dx=p.x-start.x;
+  if(Math.abs(dx)>65){
+   moveDetail(dx<0?1:-1);
+  }
+ }
+ detailPointers.delete(e.pointerId);
+ if(detailPointers.size<2)detailPinch=null;
+ if(detailPointers.size===0)detailSwipeStart=null;
+}
+viewport.addEventListener("pointerup",endDetailPointer);
+viewport.addEventListener("pointercancel",e=>{
+ detailPointers.delete(e.pointerId);
+ if(detailPointers.size<2)detailPinch=null;
+ if(detailPointers.size===0)detailSwipeStart=null;
+});
+
+let storyTouchStart=null;
+$("storyImageArea").addEventListener("touchstart",e=>{
+ if(e.touches.length===1)storyTouchStart={x:e.touches[0].clientX,y:e.touches[0].clientY};
+},{passive:true});
+$("storyImageArea").addEventListener("touchend",e=>{
+ if(!storyTouchStart||!e.changedTouches.length)return;
+ const dx=e.changedTouches[0].clientX-storyTouchStart.x;
+ if(Math.abs(dx)>60)storyStep(dx<0?1:-1);
+ storyTouchStart=null;
+},{passive:true});
+
+window.addEventListener("resize",()=>{if(data.crop&&!cropDrawing)applyCrop();});
+})();
+</script>
+</body>
+</html>
