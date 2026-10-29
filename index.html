@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Mila Video</title>
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#0b0d12;
+  --panel:#151923;
+  --panel2:#222838;
+  --line:#30394b;
+  --text:#f4f5fb;
+  --muted:#a2acc0;
+  --accent:#8174ff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:system-ui,"Malgun Gothic",sans-serif}
+body{min-height:100dvh}
+button,input,textarea{font:inherit}
+button{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:11px;padding:10px 13px;cursor:pointer}
+button:active{opacity:.8}
+button.primary,.active{background:#5548cb;border-color:var(--accent)}
+input,textarea{background:#0e1118;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:11px;width:100%;outline:none}
+textarea{min-height:80px;resize:vertical}
+.hidden{display:none!important}
+.screen{min-height:100dvh;padding:15px}
+.container{max-width:900px;margin:auto}
+.topbar{display:flex;align-items:center;gap:9px;margin-bottom:16px}
+.topbar h1{font-size:18px;flex:1;margin:0}
+.brand{font-size:24px;font-weight:850;flex:1}
+.brand span{color:var(--accent)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:15px;margin-bottom:13px}
+.title{font-size:16px;font-weight:750;margin:0 0 12px}
+.muted{font-size:13px;color:var(--muted);line-height:1.6}
+.row{display:flex;gap:8px}
+.row input{min-width:0;flex:1}
+.full{width:100%}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.status{font-size:13px;color:var(--muted);margin-top:9px;line-height:1.5}
+hr{border:0;border-top:1px solid var(--line);margin:15px 0}
+#loginScreen{display:flex;align-items:center;justify-content:center}
+.login-card{width:100%;max-width:380px;background:var(--panel);padding:24px;border:1px solid var(--line);border-radius:20px}
+.login-card input{margin:12px 0}
+.preview{position:relative;width:100%;aspect-ratio:1;overflow:hidden;border-radius:12px;background:#050609;border:1px solid var(--line)}
+.preview img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+.story-grid{position:absolute;inset:0;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(10,1fr)}
+.story-grid button{padding:0;min-width:0;min-height:0;border-radius:0;background:transparent;border:1px solid #ffffff35}
+.story-grid button:active{background:#8174ff70}
+.detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.detail-card{padding:0;overflow:hidden;text-align:left;min-width:0}
+.detail-card img{display:block;width:100%;aspect-ratio:4/3;object-fit:contain;background:#050609}
+.caption{font-size:13px;padding:10px}
+.missing{aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;text-align:center;overflow-wrap:anywhere;padding:8px;background:#080a10;color:var(--muted);font-size:12px}
+.viewer{height:min(72dvh,720px);min-height:300px;position:relative;overflow:hidden;background:#030407;border:1px solid var(--line);border-radius:13px;touch-action:none;user-select:none;-webkit-user-select:none}
+.viewer img,.viewer canvas{position:absolute;left:0;top:0;max-width:none;max-height:none;transform-origin:0 0;pointer-events:none}
+.hint{position:absolute;bottom:10px;left:10px;right:10px;padding:8px;border-radius:9px;background:#000a;text-align:center;font-size:12px;color:#eee;pointer-events:none}
+.controls{display:flex;gap:8px;margin-top:10px}
+.controls button{flex:1}
+.zoom-label{text-align:center;color:var(--muted);font-size:12px;padding:8px}
+.video-wrap{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.video-wrap iframe{display:block;width:100%;height:100%;border:0}
+.mode-buttons{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.crop-wrap{position:relative;aspect-ratio:16/9;overflow:hidden;border:1px solid var(--line);border-radius:12px;background:#000;touch-action:none}
+.crop-wrap iframe{width:100%;height:100%;border:0;pointer-events:none}
+.crop-rect{position:absolute;border:2px solid #a99fff;background:#8174ff30;pointer-events:none}
+@media(min-width:650px){.detail-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+
+<section id="loginScreen" class="screen">
+  <div class="login-card">
+    <div class="brand">Mila <span>Video</span></div>
+    <p class="muted">비밀번호를 입력하세요.</p>
+    <form id="loginForm">
+      <input id="password" type="password" placeholder="비밀번호" required>
+      <button class="primary full" type="submit">잠금 해제</button>
+    </form>
+    <div id="loginStatus" class="status"></div>
+  </div>
+</section>
+
+<section id="mainScreen" class="screen hidden">
+<div class="container">
+  <div class="topbar">
+    <div class="brand">Mila <span>Video</span></div>
+    <button class="primary" id="openVideo">영상</button>
+  </div>
+
+  <div class="panel">
+    <h2 class="title">제목</h2>
+    <div class="row">
+      <input id="titleInput" placeholder="제목">
+      <button id="saveTitle">저장</button>
+    </div>
+    <hr>
+    <h2 class="title">설명</h2>
+    <textarea id="descriptionInput" placeholder="설명을 입력하세요"></textarea>
+    <button id="saveDescription" class="full" style="margin-top:8px">설명 저장</button>
+    <div id="saveStatus" class="status"></div>
+  </div>
+
+  <div class="panel">
+    <h2 class="title">메인 스토리보드 · 100칸</h2>
+    <p class="muted">storyboard.png의 10×10 각 칸을 눌러 확대할 수 있습니다.</p>
+    <div class="preview">
+      <img src="storyboard.png" alt="메인 스토리보드"
+           onerror="this.style.opacity='.2'">
+      <div class="story-grid" id="storyGrid"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 class="title">세부 스토리보드 · 20장</h2>
+    <p class="muted">각 이미지를 누르면 확대 화면으로 이동합니다.</p>
+    <div class="detail-grid" id="detailGrid"></div>
+  </div>
+
+  <div class="panel">
+    <h2 class="title">메뉴</h2>
+    <div class="grid2">
+      <button id="menuVideo">영상 보기</button>
+      <button id="menuCrop">크롭 설정</button>
+    </div>
+  </div>
+</div>
+</section>
+
+<section id="spriteScreen" class="screen hidden">
+<div class="container">
+  <div class="topbar">
+    <button id="spriteBack">← 뒤로</button>
+    <h1 id="spriteTitle">스토리보드</h1>
+    <button id="spriteReset">초기화</button>
+  </div>
+  <div class="viewer" id="spriteViewport">
+    <canvas id="spriteCanvas"></canvas>
+    <div class="hint">드래그 이동 · 두 손가락 핀치 확대/축소</div>
+  </div>
+  <div class="controls">
+    <button id="spriteMinus">−</button>
+    <button id="spritePlus">＋</button>
+    <button id="spriteFit">화면 맞춤</button>
+  </div>
+  <div class="zoom-label" id="spriteZoomLabel">100%</div>
+</div>
+</section>
+
+<section id="detailScreen" class="screen hidden">
+<div class="container">
+  <div class="topbar">
+    <button id="detailBack">← 목록</button>
+    <h1 id="detailTitle">세부 스토리보드</h1>
+    <button id="detailReset">초기화</button>
+  </div>
+  <div class="viewer" id="detailViewport">
+    <img id="detailImage" alt="세부 스토리보드">
+    <div class="hint">드래그 이동 · 두 손가락 핀치 확대/축소</div>
+  </div>
+  <div class="controls">
+    <button id="detailMinus">−</button>
+    <button id="detailPlus">＋</button>
+    <button id="detailFit">화면 맞춤</button>
+  </div>
+  <div class="zoom-label" id="detailZoomLabel">100%</div>
+</div>
+</section>
+
+<section id="videoScreen" class="screen hidden">
+<div class="container">
+  <div class="topbar">
+    <button id="videoBack">← 메인</button>
+    <h1>영상</h1>
+    <button id="reloadVideo">새로고침</button>
+  </div>
+  <div class="panel">
+    <div class="video-wrap" id="videoWrap">
+      <iframe id="videoFrame"
+        src="https://u.pcloud.link/publink/show?code=XZlxhzJZrigVSStpBFR7SU4aCsHBo01eFvFV"
+        allow="autoplay; fullscreen; picture-in-picture" allowfullscreen
+        title="영상"></iframe>
+    </div>
+    <div class="mode-buttons">
+      <button data-mode="click" class="active">클릭</button>
+      <button data-mode="zoom">확대</button>
+      <button data-mode="view">보기</button>
+    </div>
+    <p id="modeDescription" class="muted">클릭 모드</p>
+    <button id="videoCrop" class="full">크롭 설정</button>
+    <p class="muted">외부 사이트에서 iframe 재생을 차단하면 영상이 표시되지 않을 수 있습니다.</p>
+  </div>
+</div>
+</section>
+
+<section id="cropScreen" class="screen hidden">
+<div class="container">
+  <div class="topbar">
+    <button id="cropBack">← 뒤로</button>
+    <h1>크롭 설정</h1>
+    <button id="cropClear">초기화</button>
+  </div>
+  <div class="panel">
+    <p class="muted">화면을 드래그해 사각형 영역을 선택하세요. 최대 3개 영역의 좌표를 저장합니다.</p>
+    <div class="crop-wrap" id="cropWrap">
+      <iframe src="https://u.pcloud.link/publink/show?code=XZlxhzJZrigVSStpBFR7SU4aCsHBo01eFvFV" title="크롭 미리보기"></iframe>
+      <div id="cropRect" class="crop-rect hidden"></div>
+    </div>
+    <p id="cropStageLabel" class="muted">영역 1 / 3</p>
+    <div class="grid3">
+      <button id="crop1">영역 1</button>
+      <button id="crop2">영역 2</button>
+      <button id="crop3">영역 3</button>
+    </div>
+    <button id="cropSave" class="primary full" style="margin-top:12px">저장</button>
+    <div id="cropStatus" class="status"></div>
+  </div>
+</div>
+</section>
+
+<script>
+"use strict";
+
+const PASSWORD = "mila130102!";
+const STORAGE_KEY = "milaVideoDataV1";
+const VIDEO_URL = "https://u.pcloud.link/publink/show?code=XZlxhzJZrigVSStpBFR7SU4aCsHBo01eFvFV";
+
+function defaultData(){
+  return {title:"mila grant prison intake",description:"",crops:[null,null,null]};
+}
+function loadData(){
+  try{
+    const d=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");
+    if(!d)return defaultData();
+    return {
+      title:typeof d.title==="string"?d.title:defaultData().title,
+      description:typeof d.description==="string"?d.description:"",
+      crops:Array.isArray(d.crops)?[d.crops[0]||null,d.crops[1]||null,d.crops[2]||null]:[null,null,null]
+    };
+  }catch(e){return defaultData();}
+}
+let data=loadData();
+function saveData(){
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data));return true;}
+  catch(e){alert("저장에 실패했습니다.");return false;}
+}
+
+const screenNames=["loginScreen","mainScreen","spriteScreen","detailScreen","videoScreen","cropScreen"];
+function showScreen(name){
+  screenNames.forEach(id=>document.getElementById(id).classList.toggle("hidden",id!==name));
+  window.scrollTo(0,0);
+  requestAnimationFrame(()=>{
+    if(name==="spriteScreen")spriteViewer.fitIfNeeded();
+    if(name==="detailScreen")detailViewer.fitIfNeeded();
+  });
+}
+
+document.getElementById("loginForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  if(document.getElementById("password").value===PASSWORD){
+    document.getElementById("loginStatus").textContent="";
+    document.getElementById("password").value="";
+    showScreen("mainScreen");
+  }else{
+    document.getElementById("loginStatus").textContent="비밀번호가 올바르지 않습니다.";
+  }
+});
+
+const titleInput=document.getElementById("titleInput");
+const descriptionInput=document.getElementById("descriptionInput");
+titleInput.value=data.title;
+descriptionInput.value=data.description;
+
+document.getElementById("saveTitle").onclick=()=>{
+  data.title=titleInput.value;
+  if(saveData())document.getElementById("saveStatus").textContent="제목 저장 완료";
+};
+document.getElementById("saveDescription").onclick=()=>{
+  data.description=descriptionInput.value;
+  if(saveData())document.getElementById("saveStatus").textContent="설명 저장 완료";
+};
+
+/* 메인 10×10 스토리보드 */
+const storyGrid=document.getElementById("storyGrid");
+for(let i=0;i<100;i++){
+  const b=document.createElement("button");
+  b.type="button";
+  b.title=`${i+1}번`;
+  b.setAttribute("aria-label",`스토리보드 ${i+1}번`);
+  b.onclick=()=>openSprite(i);
+  storyGrid.appendChild(b);
+}
+
+const spriteCanvas=document.getElementById("spriteCanvas");
+const spriteCtx=spriteCanvas.getContext("2d");
+const spriteSource=new Image();
+let spriteIndex=0;
+
+spriteSource.onload=()=>{
+  if(!document.getElementById("spriteScreen").classList.contains("hidden")){
+    drawSprite(spriteIndex);
+    spriteViewer.fit();
+  }
+};
+spriteSource.src="storyboard.png";
+
+function openSprite(index){
+  spriteIndex=index;
+  const row=Math.floor(index/10)+1;
+  const col=index%10+1;
+  document.getElementById("spriteTitle").textContent=`스토리보드 ${index+1}번 · ${row}행 ${col}열`;
+  showScreen("spriteScreen");
+  if(spriteSource.complete&&spriteSource.naturalWidth){
+    drawSprite(index);
+    spriteViewer.fit();
+  }
+}
+function drawSprite(index){
+  if(!spriteSource.naturalWidth)return;
+  const sw=spriteSource.naturalWidth/10;
+  const sh=spriteSource.naturalHeight/10;
+  const col=index%10,row=Math.floor(index/10);
+  const sx=Math.round(col*sw),sy=Math.round(row*sh);
+  const ex=Math.round((col+1)*sw),ey=Math.round((row+1)*sh);
+  const w=ex-sx,h=ey-sy;
+  spriteCanvas.width=w;
+  spriteCanvas.height=h;
+  spriteCtx.clearRect(0,0,w,h);
+  spriteCtx.drawImage(spriteSource,sx,sy,w,h,0,0,w,h);
+  spriteViewer.setImageSize(w,h);
+}
+document.getElementById("spriteBack").onclick=()=>showScreen("mainScreen");
+document.getElementById("spriteReset").onclick=()=>spriteViewer.fit();
+document.getElementById("spriteFit").onclick=()=>spriteViewer.fit();
+document.getElementById("spritePlus").onclick=()=>spriteViewer.zoomCenter(1.35);
+document.getElementById("spriteMinus").onclick=()=>spriteViewer.zoomCenter(1/1.35);
+
+/* 세부 스토리보드 20장 */
+const detailGrid=document.getElementById("detailGrid");
+const detailFiles=Array.from({length:20},(_,i)=>`storyboard_${String(i+1).padStart(4,"0")}.jpg`);
+const detailImage=document.getElementById("detailImage");
+
+detailFiles.forEach((file,i)=>{
+  const card=document.createElement("button");
+  card.type="button";
+  card.className="detail-card";
+
+  const img=document.createElement("img");
+  img.src=file;
+  img.alt=`세부 스토리보드 ${i+1}`;
+  img.loading="lazy";
+
+  img.onerror=()=>{
+    const missing=document.createElement("div");
+    missing.className="missing";
+    missing.textContent=`이미지를 찾을 수 없음\n${file}`;
+    img.replaceWith(missing);
+  };
+
+  const caption=document.createElement("div");
+  caption.className="caption";
+  caption.textContent=`세부 스토리보드 ${String(i+1).padStart(2,"0")}`;
+
+  card.append(img,caption);
+  card.onclick=()=>openDetail(i);
+  detailGrid.appendChild(card);
+});
+
+let detailIndex=0;
+function openDetail(index){
+  detailIndex=index;
+  document.getElementById("detailTitle").textContent=`세부 스토리보드 ${String(index+1).padStart(2,"0")}`;
+  detailImage.onload=()=>{
+    detailViewer.setImageSize(detailImage.naturalWidth,detailImage.naturalHeight);
+    detailViewer.fit();
+  };
+  detailImage.onerror=()=>{
+    document.getElementById("detailTitle").textContent="이미지를 불러올 수 없습니다";
+  };
+  detailImage.src=detailFiles[index];
+  showScreen("detailScreen");
+}
+document.getElementById("detailBack").onclick=()=>showScreen("mainScreen");
+document.getElementById("detailReset").onclick=()=>detailViewer.fit();
+document.getElementById("detailFit").onclick=()=>detailViewer.fit();
+document.getElementById("detailPlus").onclick=()=>detailViewer.zoomCenter(1.35);
+document.getElementById("detailMinus").onclick=()=>detailViewer.zoomCenter(1/1.35);
+
+/* 공통 핀치 줌 및 드래그 뷰어 */
+function createViewer(viewport,image,label){
+  let iw=0,ih=0,scale=1,x=0,y=0,fitScale=1;
+  const pointers=new Map();
+  let gesture=null;
+  const MIN_SCALE=.05,MAX_SCALE=10000;
+
+  function size(){
+    const r=viewport.getBoundingClientRect();
+    return {w:r.width,h:r.height};
+  }
+  function setImageSize(w,h){
+    iw=w;ih=h;
+    image.style.width=w+"px";
+    image.style.height=h+"px";
+    if(!viewport.closest(".screen").classList.contains("hidden"))fit();
+  }
+  function clamp(){
+    if(!iw||!ih)return;
+    const v=size(),rw=iw*scale,rh=ih*scale;
+    x=rw<=v.w?(v.w-rw)/2:Math.min(0,Math.max(v.w-rw,x));
+    y=rh<=v.h?(v.h-rh)/2:Math.min(0,Math.max(v.h-rh,y));
+  }
+  function render(){
+    if(!iw||!ih)return;
+    clamp();
+    image.style.transform=`translate(${x}px,${y}px) scale(${scale})`;
+    label.textContent=Math.round(scale/(fitScale||1)*100).toLocaleString()+"%";
+  }
+  function fit(){
+    const v=size();
+    if(!iw||!ih||!v.w||!v.h)return;
+    fitScale=Math.min(v.w/iw,v.h/ih);
+    scale=fitScale;
+    x=(v.w-iw*scale)/2;
+    y=(v.h-ih*scale)/2;
+    render();
+  }
+  function fitIfNeeded(){
+    if(!iw||!ih)fit();
+    else render();
+  }
+  function zoomAt(cx,cy,factor){
+    if(!iw||!ih)return;
+    const r=viewport.getBoundingClientRect();
+    const px=cx-r.left,py=cy-r.top;
+    const ix=(px-x)/scale,iy=(py-y)/scale;
+    scale=Math.min(MAX_SCALE,Math.max(MIN_SCALE,scale*factor));
+    x=px-ix*scale;
+    y=py-iy*scale;
+    render();
+  }
+  function zoomCenter(factor){
+    const r=viewport.getBoundingClientRect();
+    zoomAt(r.left+r.width/2,r.top+r.height/2,factor);
+  }
+  function pts(){return Array.from(pointers.values());}
+  function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+  function mid(a,b){return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};}
+  function begin(){
+    const p=pts();
+    if(p.length===1){
+      gesture={type:"drag",sx:p[0].x,sy:p[0].y,x,y};
+    }else if(p.length>=2){
+      const m=mid(p[0],p[1]),r=viewport.getBoundingClientRect();
+      gesture={
+        type:"pinch",
+        distance:Math.max(1,dist(p[0],p[1])),
+        scale,
+        ix:(m.x-r.left-x)/scale,
+        iy:(m.y-r.top-y)/scale
+      };
+    }else gesture=null;
+  }
+  viewport.addEventListener("pointerdown",e=>{
+    if(e.pointerType==="mouse"&&e.button!==0)return;
+    e.preventDefault();
+    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    try{viewport.setPointerCapture(e.pointerId);}catch(_){}
+    begin();
+  });
+  viewport.addEventListener("pointermove",e=>{
+    if(!pointers.has(e.pointerId))return;
+    e.preventDefault();
+    pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    const p=pts();
+    if(p.length>=2){
+      if(!gesture||gesture.type!=="pinch"){begin();return;}
+      const m=mid(p[0],p[1]),r=viewport.getBoundingClientRect();
+      scale=Math.min(MAX_SCALE,Math.max(MIN_SCALE,
+        gesture.scale*dist(p[0],p[1])/gesture.distance));
+      x=m.x-r.left-gesture.ix*scale;
+      y=m.y-r.top-gesture.iy*scale;
+      render();
+    }else if(p.length===1){
+      if(!gesture||gesture.type!=="drag"){begin();return;}
+      x=gesture.x+p[0].x-gesture.sx;
+      y=gesture.y+p[0].y-gesture.sy;
+      render();
+    }
+  });
+  function release(e){
+    if(!pointers.has(e.pointerId))return;
+    pointers.delete(e.pointerId);
+    begin();
+  }
+  viewport.addEventListener("pointerup",release);
+  viewport.addEventListener("pointercancel",release);
+  viewport.addEventListener("lostpointercapture",release);
+  viewport.addEventListener("wheel",e=>{
+    e.preventDefault();
+    zoomAt(e.clientX,e.clientY,e.deltaY<0?1.15:1/1.15);
+  },{passive:false});
+  window.addEventListener("resize",()=>requestAnimationFrame(render));
+  return {fit,fitIfNeeded,setImageSize,zoomCenter};
+}
+
+const spriteViewer=createViewer(
+  document.getElementById("spriteViewport"),
+  spriteCanvas,
+  document.getElementById("spriteZoomLabel")
+);
+const detailViewer=createViewer(
+  document.getElementById("detailViewport"),
+  detailImage,
+  document.getElementById("detailZoomLabel")
+);
+
+/* 영상 모드 */
+const videoFrame=document.getElementById("videoFrame");
+const videoWrap=document.getElementById("videoWrap");
+let videoMode="click";
+
+function setMode(mode){
+  videoMode=mode;
+  document.querySelectorAll("[data-mode]").forEach(b=>{
+    b.classList.toggle("active",b.dataset.mode===mode);
+  });
+  videoFrame.style.pointerEvents=mode==="click"?"auto":"none";
+  videoWrap.style.pointerEvents=mode==="click"?"auto":"none";
+
+  document.getElementById("modeDescription").textContent={
+    click:"클릭 모드: iframe 내부 조작을 허용합니다.",
+    zoom:"확대 모드: iframe 클릭을 차단합니다. 외부 iframe 자체 확대는 제한될 수 있습니다.",
+    view:"보기 모드: iframe 내부 조작을 차단합니다."
+  }[mode];
+}
+document.querySelectorAll("[data-mode]").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
+function openVideo(){showScreen("videoScreen");setMode(videoMode);}
+document.getElementById("openVideo").onclick=openVideo;
+document.getElementById("menuVideo").onclick=openVideo;
+document.getElementById("videoBack").onclick=()=>showScreen("mainScreen");
+document.getElementById("reloadVideo").onclick=()=>{videoFrame.src=VIDEO_URL;};
+document.getElementById("videoCrop").onclick=openCrop;
+document.getElementById("menuCrop").onclick=openCrop;
+
+/* 크롭 영역 3개 저장 */
+const cropWrap=document.getElementById("cropWrap");
+const cropRect=document.getElementById("cropRect");
+let cropStage=0,cropStart=null,cropCurrent=null,drawing=false;
+
+function selectCropStage(i){
+  cropStage=i;
+  document.getElementById("cropStageLabel").textContent=`영역 ${i+1} / 3`;
+  [0,1,2].forEach(n=>document.getElementById("crop"+(n+1)).classList.toggle("active",n===i));
+  cropStart=null;cropCurrent=null;
+  drawCrop();
+}
+document.getElementById("crop1").onclick=()=>selectCropStage(0);
+document.getElementById("crop2").onclick=()=>selectCropStage(1);
+document.getElementById("crop3").onclick=()=>selectCropStage(2);
+
+function cropPoint(e){
+  const r=cropWrap.getBoundingClientRect();
+  return {
+    x:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),
+    y:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))
+  };
+}
+function normalizedRect(a,b){
+  const x=Math.min(a.x,b.x),y=Math.min(a.y,b.y);
+  return {x,y,w:Math.abs(b.x-a.x),h:Math.abs(b.y-a.y)};
+}
+cropWrap.addEventListener("pointerdown",e=>{
+  if(e.target.tagName==="IFRAME")return;
+  if(e.button!==undefined&&e.button!==0)return;
+  drawing=true;cropStart=cropPoint(e);cropCurrent=cropStart;
+  try{cropWrap.setPointerCapture(e.pointerId);}catch(_){}
+  drawCrop();
+});
+cropWrap.addEventListener("pointermove",e=>{
+  if(!drawing)return;
+  cropCurrent=cropPoint(e);drawCrop();
+});
+function endCrop(e){
+  if(!drawing)return;
+  drawing=false;cropCurrent=cropPoint(e);
+  const r=normalizedRect(cropStart,cropCurrent);
+  if(r.w>.005&&r.h>.005){
+    data.crops[cropStage]=r;
+    document.getElementById("cropStatus").textContent="영역을 지정했습니다. 저장을 누르세요.";
+  }
+  drawCrop();
+}
+cropWrap.addEventListener("pointerup",endCrop);
+cropWrap.addEventListener("pointercancel",endCrop);
+
+function drawCrop(){
+  let r=cropStart&&cropCurrent?normalizedRect(cropStart,cropCurrent):data.crops[cropStage];
+  if(!r){cropRect.classList.add("hidden");return;}
+  cropRect.classList.remove("hidden");
+  cropRect.style.left=(r.x*100)+"%";
+  cropRect.style.top=(r.y*100)+"%";
+  cropRect.style.width=(r.w*100)+"%";
+  cropRect.style.height=(r.h*100)+"%";
+}
+function openCrop(){
+  showScreen("cropScreen");
+  selectCropStage(cropStage);
+  drawCrop();
+}
+document.getElementById("cropBack").onclick=()=>showScreen("videoScreen");
+document.getElementById("cropSave").onclick=()=>{
+  if(saveData())document.getElementById("cropStatus").textContent="크롭 좌표를 저장했습니다.";
+};
+document.getElementById("cropClear").onclick=()=>{
+  data.crops=[null,null,null];
+  cropStart=null;cropCurrent=null;
+  saveData();drawCrop();
+  document.getElementById("cropStatus").textContent="크롭 설정을 초기화했습니다.";
+};
+
+setMode("click");
+showScreen("loginScreen");
+</script>
+</body>
+</html>
