@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Mila Video</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;height:100dvh;overflow:hidden;background:#090b10;color:#fff;font-family:Arial,sans-serif}
+button,input,textarea{font:inherit}
+button{background:#20283a;color:#fff;border:1px solid #414b63;border-radius:7px;padding:5px 8px;min-height:28px}
+button.active{background:#6255df;border-color:#a99cff}
+input,textarea{background:#111827;color:white;border:1px solid #414b63;border-radius:7px;padding:7px;width:100%}
+.small{font-size:11px;color:#b7c1d4}
+#gate{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:15px;background:#090b10}
+.gatebox{width:min(360px,100%);padding:22px;background:#171e2b;border:1px solid #39445b;border-radius:14px}
+#app{height:100%;height:100dvh;display:none;flex-direction:column}
+header{height:30px;min-height:30px;display:flex;align-items:center;gap:4px;padding:2px 5px;background:#121925}
+header button{height:25px;min-height:25px;padding:2px 6px;font-size:10px}
+.brand{font-weight:bold;font-size:10px}
+#headerTitle{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#cbd3e2}
+#videoScreen{flex:1;min-height:0;display:flex;flex-direction:column}
+#videoStage{position:relative;flex:1;min-height:0;overflow:hidden;background:#000;touch-action:auto}
+#videoClip{position:absolute;inset:0;overflow:hidden}
+#videoTransform{position:absolute;inset:0;transform-origin:0 0}
+#videoFrame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+#description{height:27px;flex:none;overflow:auto;padding:4px 6px;background:#121925;font-size:10px;color:#b7c1d4}
+#bottomBar{display:flex;justify-content:center;flex-wrap:wrap;gap:3px;padding:3px;background:#121925}
+#bottomBar button{min-height:26px;padding:3px 6px;font-size:10px}
+#cropOverlay{position:absolute;inset:0;z-index:10;display:none;touch-action:none}
+#cropOverlay.on{display:block}
+#cropBox{position:absolute;border:2px solid #a99cff;background:#8a7cff22;box-shadow:0 0 0 9999px #0008;pointer-events:none}
+#cropHint{position:absolute;top:5px;left:5px;right:5px;padding:6px;background:#171d2aeb;border-radius:6px;text-align:center;font-size:11px;pointer-events:none}
+.panel{position:fixed;inset:0;z-index:100;background:#000b;display:none;align-items:center;justify-content:center;padding:5px}
+.panel.show{display:flex}
+.dialog{width:min(540px,100%);max-height:98dvh;overflow:auto;padding:10px;background:#171e2b;border:1px solid #414b63;border-radius:10px}
+.field{margin:9px 0}
+.field label{display:block;margin-bottom:4px;font-size:11px;color:#bdc8dc}
+.row{display:flex;gap:5px;margin:6px 0}
+.row>*{flex:1;min-width:0}
+hr{border-color:#384258;margin:12px 0}
+#cropDisplay{display:none;position:fixed;inset:0;width:100vw;height:100dvh;z-index:200;background:#000;overflow:hidden}
+#cropDisplay.show{display:block}
+#cropDisplayHeader{position:absolute;top:0;left:0;right:0;height:30px;z-index:5;display:flex;align-items:center;gap:4px;padding:2px 5px;background:#171d2a}
+#cropDisplayHeader strong{flex:1;min-width:0;font-size:10px;overflow:hidden;white-space:nowrap}
+#cropDisplayHeader button{height:24px;min-height:24px;padding:2px 6px;font-size:10px}
+#cropDisplayViewport{position:absolute;top:30px;left:0;right:0;bottom:0;overflow:hidden;background:#000}
+#cropAdjust{position:absolute;z-index:6;left:6px;right:6px;bottom:6px;padding:8px;background:#111827ed;border:1px solid #58627b;border-radius:9px;display:none}
+#cropAdjust.show{display:block}
+.adjustRow{display:grid;grid-template-columns:48px 1fr 42px;gap:6px;align-items:center;margin:4px 0;font-size:10px}
+.adjustRow input{padding:0;accent-color:#9184ff}
+.adjustButtons{display:flex;gap:4px;margin-top:5px}
+.adjustButtons button{flex:1;font-size:10px;min-height:25px}
+#showMenuBtn{position:fixed;top:4px;right:4px;z-index:500;display:none;background:#6255df;border:0}
+#showMenuBtn.visible{display:block}
+body.menu-hidden header,body.menu-hidden #bottomBar,body.menu-hidden #description{display:none!important}
+body.menu-hidden #videoScreen{flex:1}
+#storyboardScreen{position:fixed;inset:0;z-index:300;display:none;flex-direction:column;background:#090c12}
+#storyboardScreen.show{display:flex}
+.storyHead{display:flex;align-items:center;gap:4px;padding:5px;background:#171e2b}
+.storyHead strong{flex:1;font-size:12px}
+#storyTabs{display:flex;gap:4px;padding:4px}
+#storyTabs button{flex:1;font-size:10px}
+#storyGrid{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;padding:6px;align-content:start}
+.storyCell{position:relative;aspect-ratio:1;padding:0;overflow:hidden;background:#171e2b;border-radius:5px}
+.storyCell canvas,.storyCell img{width:100%;height:100%;object-fit:contain;display:block}
+.storyCell .cellNumber{position:absolute;left:0;bottom:0;background:#000b;padding:2px 4px;font-size:9px}
+.storyCell .downloadCell{position:absolute;right:2px;top:2px;z-index:2;min-height:22px;padding:1px 5px;background:#6255df;border:0;font-size:11px}
+.storyCell.hasDesc:after{content:"✎";position:absolute;left:3px;top:3px;font-size:10px;background:#6255df;border-radius:4px;padding:2px}
+#storyStatus{padding:5px;background:#121925;font-size:10px;color:#bdc8dc}
+#detailScreen{position:fixed;inset:0;z-index:400;background:#050608;display:none;flex-direction:column}
+#detailScreen.show{display:flex}
+.detailHead{display:flex;align-items:center;gap:4px;padding:5px;background:#121925}
+.detailHead strong{flex:1;font-size:11px}
+#detailViewport{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none}
+#detailImage,#detailCanvas{position:absolute;left:0;top:0;max-width:none;max-height:none;transform-origin:0 0;user-select:none}
+#detailDescription{height:50px;resize:vertical;font-size:11px}
+.detailFoot{display:flex;gap:5px;padding:5px;background:#121925}
+.detailFoot button{flex:1}
+#compareScreen{position:fixed;inset:0;z-index:450;background:#080b11;display:none;flex-direction:column}
+#compareScreen.show{display:flex}
+#compareGrid{display:grid;grid-template-columns:1fr 1fr;gap:4px;flex:1;min-height:0;padding:4px}
+.comparePane{display:flex;flex-direction:column;min-width:0;min-height:0}
+.comparePane select{background:#111827;color:white;padding:5px}
+.compareBox{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none;background:#000}
+.compareBox img{position:absolute;max-width:none;max-height:none;transform-origin:0 0;pointer-events:none}
+.comparePane textarea{height:55px;resize:vertical;font-size:10px}
+.patternGrid{width:min(280px,80vw);aspect-ratio:1;display:grid;grid-template-columns:repeat(3,1fr);margin:12px auto;touch-action:none}
+.patternDot{width:45%;height:45%;min-height:0;justify-self:center;align-self:center;border-radius:50%;padding:0;background:#293248}
+.patternDot.selected{background:#8d80ff;border:3px solid white}
+@media(min-width:650px){#storyGrid{grid-template-columns:repeat(10,minmax(0,1fr))}}
+@media(orientation:landscape) and (max-height:500px){
+ header{height:25px;min-height:25px}
+ #bottomBar{padding:2px}
+ #bottomBar button{min-height:23px}
+ #description{height:20px}
+}
+</style>
+</head>
+<body>
+
+<div id="gate">
+ <div class="gatebox" id="passwordGate">
+  <h2>Mila Video</h2>
+  <p class="small">비밀번호를 입력하세요.</p>
+  <input id="passwordInput" type="password" placeholder="비밀번호">
+  <button id="unlockBtn" class="active" style="width:100%;margin-top:8px">입장</button>
+  <p id="gateError" class="small"></p>
+ </div>
+ <div class="gatebox" id="patternGate" style="display:none">
+  <h3>패턴 잠금</h3>
+  <div class="patternGrid" id="loginPattern"></div>
+  <p id="patternError" class="small"></p>
+  <button id="patternSubmit" class="active" style="width:100%">확인</button>
+ </div>
+</div>
+
+<div id="app">
+ <header>
+  <span class="brand">MILA VIDEO</span>
+  <span id="headerTitle">mila grant prison intake</span>
+  <button id="menuBtn">설정</button>
+  <button id="hideMenuBtn">메뉴 숨기기</button>
+ </header>
+ <main id="videoScreen">
+  <div id="videoStage">
+   <div id="videoClip">
+    <div id="videoTransform">
+     <iframe id="videoFrame" src="https://u.pcloud.link/publink/show?code=XZlxhzJZrigVSStpBFR7SU4aCsHBo01eFvFV" allow="autoplay;fullscreen;picture-in-picture" allowfullscreen></iframe>
+    </div>
+   </div>
+   <div id="cropOverlay">
+    <div id="cropHint">영상에서 크롭할 영역을 드래그하세요.</div>
+    <div id="cropBox"></div>
+   </div>
+  </div>
+  <div id="description"></div>
+  <div id="bottomBar">
+   <button id="clickMode" class="active">클릭</button>
+   <button id="zoomMode">확대</button>
+   <button id="viewMode">보기</button>
+   <button id="resetVideoZoom">확대 초기화</button>
+   <button id="cropBtn">크롭 지정</button>
+   <button id="cropViewBtn">크롭 보기</button>
+   <button id="storyBtn">스토리보드</button>
+  </div>
+ </main>
+</div>
+<button id="showMenuBtn">☰ 메뉴</button>
+
+<div class="panel" id="settingsPanel">
+ <div class="dialog">
+  <h3>설정</h3>
+  <div class="field"><label>영상 제목</label><input id="titleInput"></div>
+  <div class="field"><label>영상 설명</label><textarea id="descInput" rows="2"></textarea></div>
+  <button id="saveTextBtn" class="active">제목·설명 저장</button>
+  <hr>
+  <h3>크롭</h3>
+  <p class="small">영역을 지정한 뒤 크롭 보기를 누르세요.</p>
+  <div class="row">
+   <button id="startCropBtn" class="active">영역 지정</button>
+   <button id="resetCropBtn">크롭 초기화</button>
+  </div>
+  <div class="row">
+   <button id="cropLandscapeBtn">가로 크롭 보기</button>
+   <button id="cropPortraitBtn">세로 크롭 보기</button>
+  </div>
+  <p id="cropStatus" class="small"></p>
+  <hr>
+  <h3>패턴 잠금</h3>
+  <p class="small">최소 4개 점을 연결합니다. 같은 패턴을 두 번 입력해야 저장됩니다.</p>
+  <button id="setupPatternBtn" class="active">패턴 설정</button>
+  <button id="disablePatternBtn">패턴 해제</button>
+  <div id="patternSetup" style="display:none">
+   <p id="setupPatternText" class="small">첫 번째 패턴</p>
+   <div class="patternGrid" id="setupPatternGrid"></div>
+   <p id="setupPatternStatus" class="small"></p>
+   <div class="row"><button id="clearPatternBtn">다시 그리기</button><button id="confirmPatternBtn" class="active">다음</button></div>
+   <button id="cancelPatternBtn">취소</button>
+  </div>
+  <hr>
+  <h3>백업 / 복원</h3>
+  <div class="row"><button id="exportBtn">백업 만들기</button><button id="downloadBackupBtn">JSON 다운로드</button></div>
+  <textarea id="backupText" rows="5" placeholder="백업 데이터"></textarea>
+  <div class="row"><button id="copyBackupBtn">복사</button><button id="importBtn">복원</button></div>
+  <button id="closeSettingsBtn" style="width:100%;margin-top:8px">닫기</button>
+ </div>
+</div>
+
+<div id="cropDisplay">
+ <div id="cropDisplayHeader">
+  <strong id="cropDisplayTitle">크롭 화면</strong>
+  <button id="cropAdjustBtn">크기·위치</button>
+  <button id="cropLandMode">가로</button>
+  <button id="cropPortMode">세로</button>
+  <button id="cropDisplayClose">닫기</button>
+ </div>
+ <div id="cropDisplayViewport"></div>
+ <div id="cropAdjust">
+  <div class="adjustRow"><span>크기</span><input id="cropScaleInput" type="range" min="0.5" max="3" step="0.01" value="1"><span id="cropScaleValue">1.00×</span></div>
+  <div class="adjustRow"><span>가로 위치</span><input id="cropXInput" type="range" min="-1000" max="1000" step="1" value="0"><span id="cropXValue">0</span></div>
+  <div class="adjustRow"><span>세로 위치</span><input id="cropYInput" type="range" min="-1000" max="1000" step="1" value="0"><span id="cropYValue">0</span></div>
+  <div class="adjustButtons">
+   <button id="cropAdjustReset">맞춤 초기화</button>
+   <button id="cropAdjustSave" class="active">크기·위치 저장</button>
+   <button id="cropAdjustClose">닫기</button>
+  </div>
+ </div>
+</div>
+
+<div id="storyboardScreen">
+ <div class="storyHead">
+  <strong id="storyTitle">메인 스토리보드</strong>
+  <button id="storyPrev">◀</button><button id="storyNext">▶</button>
+  <button id="compareOpen">2장 비교</button>
+  <button id="storyClose">닫기</button>
+ </div>
+ <div id="storyTabs">
+  <button id="mainTab" class="active">메인 100칸</button>
+  <button id="detailTab">세부 20장</button>
+ </div>
+ <div id="storyGrid"></div>
+ <div id="storyStatus">각 이미지 우측 위의 ↓ 버튼을 눌러 개별 다운로드할 수 있습니다.</div>
+</div>
+
+<div id="detailScreen">
+ <div class="detailHead">
+  <button id="detailBack">목록</button>
+  <strong id="detailTitle">이미지</strong>
+  <button id="detailDownload" class="active">이미지 다운로드</button>
+  <button id="detailReset">초기화</button>
+  <button id="detailClose">닫기</button>
+ </div>
+ <div id="detailViewport">
+  <canvas id="detailCanvas" style="display:none"></canvas>
+  <img id="detailImage" style="display:none">
+ </div>
+ <textarea id="detailDescription" placeholder="이미지 설명 (자동 저장)"></textarea>
+ <div class="detailFoot"><button id="detailPrev">◀ 이전</button><button id="detailNext">다음 ▶</button></div>
+</div>
+
+<div id="compareScreen">
+ <div class="storyHead"><strong>이미지 비교</strong><button id="compareClose">닫기</button></div>
+ <div id="compareGrid">
+  <div class="comparePane">
+   <select id="compareA"></select>
+   <div class="compareBox" id="compareBoxA"><img id="compareImgA"></div>
+   <textarea id="compareDescA"></textarea>
+  </div>
+  <div class="comparePane">
+   <select id="compareB"></select>
+   <div class="compareBox" id="compareBoxB"><img id="compareImgB"></div>
+   <textarea id="compareDescB"></textarea>
+  </div>
+ </div>
+ <div class="detailFoot"><button id="compareSwap">위치 바꾸기</button><button id="compareReset">확대 초기화</button></div>
+</div>
+
+<script>
+(()=>{
+"use strict";
+const $=id=>document.getElementById(id);
+const KEY="mila_video_app_final_v5";
+const DESC="mila_video_story_descriptions_v1";
+const SEC="mila_video_security_v1";
+
+let data={},descriptions={main:{},detail:{}},security={};
+try{data=JSON.parse(localStorage.getItem(KEY)||"{}")||{}}catch(e){}
+try{descriptions=JSON.parse(localStorage.getItem(DESC)||'{"main":{},"detail":{}}')||{main:{},detail:{}}}catch(e){}
+try{security=JSON.parse(localStorage.getItem(SEC)||"{}")||{}}catch(e){}
+descriptions.main ||= {};descriptions.detail ||= {};
+
+data.title ||= "mila grant prison intake";
+data.description ||= "";
+data.mode ||= "click";
+data.videoView ||= {scale:1,x:0,y:0};
+data.cropView ||= {scale:1,x:0,y:0};
+
+let videoScale=data.videoView.scale||1,videoX=data.videoView.x||0,videoY=data.videoView.y||0;
+let cropScale=data.cropView.scale||1,cropOffsetX=data.cropView.x||0,cropOffsetY=data.cropView.y||0;
+
+function save(){
+ data.videoView={scale:videoScale,x:videoX,y:videoY};
+ data.cropView={scale:cropScale,x:cropOffsetX,y:cropOffsetY};
+ try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}
+}
+function saveDesc(){
+ try{localStorage.setItem(DESC,JSON.stringify(descriptions))}catch(e){}
+}
+function saveSec(){
+ try{localStorage.setItem(SEC,JSON.stringify(security))}catch(e){}
+}
+
+/* 메뉴 */
+$("hideMenuBtn").onclick=()=>{
+ document.body.classList.add("menu-hidden");
+ $("showMenuBtn").classList.add("visible");
+ if(cropDisplayActive)refreshCropDisplay();
+};
+$("showMenuBtn").onclick=()=>{
+ document.body.classList.remove("menu-hidden");
+ $("showMenuBtn").classList.remove("visible");
+ if(cropDisplayActive)refreshCropDisplay();
+};
+
+/* 로그인 */
+$("unlockBtn").onclick=unlock;
+$("passwordInput").onkeydown=e=>{if(e.key==="Enter")unlock()};
+async function unlock(){
+ if($("passwordInput").value!=="mila130102!"){
+  $("gateError").textContent="비밀번호가 올바르지 않습니다.";return;
+ }
+ $("passwordGate").style.display="none";
+ if(security.hash){
+  $("patternGate").style.display="block";
+  buildPattern($("loginPattern"),loginPattern);
+ }else enterApp();
+}
+let loginPattern=[];
+$("patternSubmit").onclick=async()=>{
+ if(loginPattern.length<4){$("patternError").textContent="최소 4개 점을 연결하세요.";return}
+ if(await hash(loginPattern.join("-"),security.salt)===security.hash)enterApp();
+ else{$("patternError").textContent="패턴이 일치하지 않습니다.";loginPattern=[];buildPattern($("loginPattern"),loginPattern)}
+};
+function enterApp(){
+ $("gate").style.display="none";$("app").style.display="flex";
+ $("titleInput").value=data.title;$("descInput").value=data.description;
+ $("headerTitle").textContent=data.title;$("description").textContent=data.description;
+ renderVideo();setMode(data.mode);
+}
+
+/* 설정창 */
+$("menuBtn").onclick=()=>$("settingsPanel").classList.add("show");
+$("closeSettingsBtn").onclick=()=>$("settingsPanel").classList.remove("show");
+$("saveTextBtn").onclick=()=>{
+ data.title=$("titleInput").value.trim()||"Mila Video";
+ data.description=$("descInput").value;
+ $("headerTitle").textContent=data.title;$("description").textContent=data.description;save();
+};
+
+/* 영상 모드 및 확대 */
+function renderVideo(){$("videoTransform").style.transform=`translate(${videoX}px,${videoY}px) scale(${videoScale})`}
+function setMode(m){
+ data.mode=m;
+ ["click","zoom","view"].forEach(x=>$(x+"Mode").classList.toggle("active",x===m));
+ $("videoFrame").style.pointerEvents=m==="click"&&!cropOn&&!cropDisplayActive?"auto":"none";
+ $("videoStage").style.touchAction=m==="zoom"?"none":"auto";save();
+}
+$("clickMode").onclick=()=>setMode("click");
+$("zoomMode").onclick=()=>setMode("zoom");
+$("viewMode").onclick=()=>setMode("view");
+$("resetVideoZoom").onclick=()=>{videoScale=1;videoX=videoY=0;renderVideo();save()};
+
+let videoPointers=new Map(),videoPinch=null;
+$("videoStage").addEventListener("pointerdown",e=>{
+ if(data.mode!=="zoom"||cropOn||cropDisplayActive)return;
+ e.preventDefault();try{$("videoStage").setPointerCapture(e.pointerId)}catch(_){}
+ videoPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(videoPointers.size===2){
+  let p=[...videoPointers.values()],r=$("videoStage").getBoundingClientRect();
+  videoPinch={d:Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y),s:videoScale,x:videoX,y:videoY,cx:(p[0].x+p[1].x)/2-r.left,cy:(p[0].y+p[1].y)/2-r.top};
+ }
+});
+$("videoStage").addEventListener("pointermove",e=>{
+ if(data.mode!=="zoom"||!videoPointers.has(e.pointerId)||cropOn||cropDisplayActive)return;
+ e.preventDefault();let old=videoPointers.get(e.pointerId);
+ videoPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(videoPointers.size===2&&videoPinch){
+  let p=[...videoPointers.values()],r=$("videoStage").getBoundingClientRect();
+  let d=Math.max(1,Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y));
+  let cx=(p[0].x+p[1].x)/2-r.left,cy=(p[0].y+p[1].y)/2-r.top;
+  let ns=Math.max(1,Math.min(30,videoPinch.s*d/videoPinch.d)),ratio=ns/videoPinch.s;
+  videoX=cx-(videoPinch.cx-videoPinch.x)*ratio;
+  videoY=cy-(videoPinch.cy-videoPinch.y)*ratio;videoScale=ns;
+ }else{videoX+=e.clientX-old.x;videoY+=e.clientY-old.y}
+ renderVideo();
+});
+function endVideo(e){videoPointers.delete(e.pointerId);if(videoPointers.size<2)videoPinch=null;save()}
+["pointerup","pointercancel","lostpointercapture"].forEach(ev=>$("videoStage").addEventListener(ev,endVideo));
+
+/* 크롭 지정 */
+let cropOn=false,cropStart=null,cropTemp=null;
+function point(e){
+ let r=$("videoStage").getBoundingClientRect();
+ return{x:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),y:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))};
+}
+function startCrop(){
+ closeCropDisplay();$("settingsPanel").classList.remove("show");
+ cropOn=true;cropStart=null;cropTemp=null;
+ $("cropOverlay").classList.add("on");$("cropHint").style.display="block";
+ $("videoFrame").style.pointerEvents="none";$("videoStage").style.touchAction="none";
+}
+$("cropBtn").onclick=startCrop;$("startCropBtn").onclick=startCrop;
+$("cropOverlay").addEventListener("pointerdown",e=>{
+ if(!cropOn)return;e.preventDefault();try{$("cropOverlay").setPointerCapture(e.pointerId)}catch(_){}
+ cropStart=point(e);cropTemp={x:cropStart.x,y:cropStart.y,w:0,h:0};drawCrop();
+});
+$("cropOverlay").addEventListener("pointermove",e=>{
+ if(!cropOn||!cropStart)return;e.preventDefault();
+ let p=point(e);
+ cropTemp={x:Math.min(p.x,cropStart.x),y:Math.min(p.y,cropStart.y),w:Math.abs(p.x-cropStart.x),h:Math.abs(p.y-cropStart.y)};
+ drawCrop();
+});
+function drawCrop(){
+ if(!cropTemp)return;
+ let r=$("videoStage").getBoundingClientRect(),c=cropTemp,b=$("cropBox");
+ b.style.left=c.x*r.width+"px";b.style.top=c.y*r.height+"px";
+ b.style.width=c.w*r.width+"px";b.style.height=c.h*r.height+"px";
+}
+function finishCrop(){
+ if(!cropOn)return;
+ if(cropTemp&&cropTemp.w>.01&&cropTemp.h>.01)data.crop={...cropTemp};
+ cropOn=false;cropStart=null;cropTemp=null;
+ $("cropOverlay").classList.remove("on");$("cropHint").style.display="none";
+ $("videoFrame").style.pointerEvents=data.mode==="click"&&!cropDisplayActive?"auto":"none";
+ $("videoStage").style.touchAction=data.mode==="zoom"?"none":"auto";
+ applyCrop();save();updateCropStatus();
+}
+$("cropOverlay").addEventListener("pointerup",finishCrop);
+$("cropOverlay").addEventListener("pointercancel",finishCrop);
+function applyCrop(){
+ const clip=$("videoClip"),c=data.crop;
+ if(!c){clip.style.clipPath="none";clip.style.webkitClipPath="none";return}
+ let x=c.x,y=c.y,w=c.w,h=c.h;
+ let v=`inset(${y*100}% ${(1-x-w)*100}% ${(1-y-h)*100}% ${x*100}%)`;
+ clip.style.clipPath=v;clip.style.webkitClipPath=v;
+}
+$("resetCropBtn").onclick=()=>{
+ data.crop=null;cropScale=1;cropOffsetX=cropOffsetY=0;
+ applyCrop();save();closeCropDisplay();updateCropStatus();
+};
+function updateCropStatus(){$("cropStatus").textContent=data.crop?"크롭 영역 저장됨":"크롭 영역 없음"}
+
+/* 크롭 보기 및 크기·위치 조절 */
+let cropDisplayActive=false,cropPlaceholder=null,cropOriginalStyle=null,cropBaseRect=null;
+let cropDisplayMode="landscape";
+
+function layoutCropDisplay(){
+ if(!cropDisplayActive||!data.crop||!cropBaseRect)return;
+ let clip=$("videoClip"),vp=$("cropDisplayViewport"),c=data.crop;
+ let vw=vp.clientWidth,vh=vp.clientHeight,W=cropBaseRect.width,H=cropBaseRect.height;
+ if(!vw||!vh||!W||!H)return;
+
+ let x=Math.max(0,Math.min(1,c.x)),y=Math.max(0,Math.min(1,c.y));
+ let w=Math.max(.001,Math.min(1-x,c.w)),h=Math.max(.001,Math.min(1-y,c.h));
+ let cw=W*w,ch=H*h;
+
+ /* 기본 맞춤 배율: 크롭 영역이 잘리지 않으면서 최대 크기 */
+ let fit=Math.min(vw/cw,vh/ch);
+ let scale=fit*cropScale;
+ let tx=(vw-cw*scale)/2-x*W*scale+cropOffsetX;
+ let ty=(vh-ch*scale)/2-y*H*scale+cropOffsetY;
+
+ clip.style.position="absolute";
+ clip.style.left="0";clip.style.top="0";
+ clip.style.right="auto";clip.style.bottom="auto";
+ clip.style.width=W+"px";clip.style.height=H+"px";
+ clip.style.inset="auto";clip.style.overflow="hidden";
+ clip.style.clipPath="none";clip.style.webkitClipPath="none";
+ clip.style.transformOrigin="0 0";
+ clip.style.transform=`translate3d(${tx}px,${ty}px,0) scale(${scale})`;
+}
+function refreshCropDisplay(){
+ if(!cropDisplayActive)return;
+ requestAnimationFrame(()=>{layoutCropDisplay();requestAnimationFrame(layoutCropDisplay)});
+}
+function setCropDisplayMode(mode){
+ cropDisplayMode=mode;
+ $("cropDisplay").className="show "+mode;
+ $("cropDisplayTitle").textContent=mode==="landscape"?"크롭 영상 · 가로":"크롭 영상 · 세로";
+ refreshCropDisplay();
+}
+function openCropDisplay(mode){
+ if(!data.crop){alert("먼저 크롭 영역을 지정하세요.");return}
+ if(cropOn)finishCrop();
+ let stage=$("videoStage"),clip=$("videoClip"),vp=$("cropDisplayViewport");
+ if(!cropDisplayActive){
+  cropBaseRect=stage.getBoundingClientRect();
+  cropOriginalStyle=clip.getAttribute("style");
+  cropPlaceholder=document.createComment("original video position");
+  clip.parentNode.insertBefore(cropPlaceholder,clip);
+  vp.appendChild(clip);cropDisplayActive=true;
+ }
+ $("videoFrame").style.pointerEvents="none";
+ $("cropDisplay").style.display="block";
+ setCropDisplayMode(mode);
+ syncAdjustInputs();
+}
+function closeCropDisplay(){
+ if(!cropDisplayActive)return;
+ let clip=$("videoClip");
+ if(cropPlaceholder&&cropPlaceholder.parentNode){
+  cropPlaceholder.parentNode.insertBefore(clip,cropPlaceholder);cropPlaceholder.remove();
+ }
+ if(cropOriginalStyle===null)clip.removeAttribute("style");
+ else clip.setAttribute("style",cropOriginalStyle);
+ cropDisplayActive=false;cropPlaceholder=null;cropOriginalStyle=null;cropBaseRect=null;
+ $("cropDisplay").className="";$("cropDisplay").style.display="none";
+ $("cropAdjust").classList.remove("show");
+ $("videoFrame").style.pointerEvents=data.mode==="click"&&!cropOn?"auto":"none";
+}
+$("cropViewBtn").onclick=()=>openCropDisplay("landscape");
+$("cropLandscapeBtn").onclick=()=>{$("settingsPanel").classList.remove("show");openCropDisplay("landscape")};
+$("cropPortraitBtn").onclick=()=>{$("settingsPanel").classList.remove("show");openCropDisplay("portrait")};
+$("cropLandMode").onclick=()=>setCropDisplayMode("landscape");
+$("cropPortMode").onclick=()=>setCropDisplayMode("portrait");
+$("cropDisplayClose").onclick=closeCropDisplay;
+
+/* 크롭 조절 슬라이더 + 화면 직접 드래그 */
+$("cropAdjustBtn").onclick=()=>$("cropAdjust").classList.toggle("show");
+$("cropAdjustClose").onclick=()=>$("cropAdjust").classList.remove("show");
+function syncAdjustInputs(){
+ $("cropScaleInput").value=cropScale;
+ $("cropXInput").value=cropOffsetX;
+ $("cropYInput").value=cropOffsetY;
+ $("cropScaleValue").textContent=cropScale.toFixed(2)+"×";
+ $("cropXValue").textContent=Math.round(cropOffsetX);
+ $("cropYValue").textContent=Math.round(cropOffsetY);
+}
+function updateCropAdjust(){
+ cropScale=Number($("cropScaleInput").value);
+ cropOffsetX=Number($("cropXInput").value);
+ cropOffsetY=Number($("cropYInput").value);
+ syncAdjustInputs();layoutCropDisplay();save();
+}
+["cropScaleInput","cropXInput","cropYInput"].forEach(id=>$(id).addEventListener("input",updateCropAdjust));
+$("cropAdjustReset").onclick=()=>{
+ cropScale=1;cropOffsetX=cropOffsetY=0;
+ syncAdjustInputs();layoutCropDisplay();save();
+};
+$("cropAdjustSave").onclick=()=>{save();$("cropAdjust").classList.remove("show")};
+
+/* 크롭 화면에서 한 손가락으로 위치 이동 */
+let cropDrag=null;
+$("cropDisplayViewport").addEventListener("pointerdown",e=>{
+ if(!cropDisplayActive||$("cropAdjust").classList.contains("show"))return;
+ cropDrag={id:e.pointerId,x:e.clientX,y:e.clientY,ox:cropOffsetX,oy:cropOffsetY};
+ try{$("cropDisplayViewport").setPointerCapture(e.pointerId)}catch(_){}
+});
+$("cropDisplayViewport").addEventListener("pointermove",e=>{
+ if(!cropDrag||cropDrag.id!==e.pointerId)return;
+ cropOffsetX=Math.max(-1000,Math.min(1000,cropDrag.ox+e.clientX-cropDrag.x));
+ cropOffsetY=Math.max(-1000,Math.min(1000,cropDrag.oy+e.clientY-cropDrag.y));
+ syncAdjustInputs();layoutCropDisplay();
+});
+function endCropDrag(){if(cropDrag){cropDrag=null;save()}}
+["pointerup","pointercancel","lostpointercapture"].forEach(ev=>$("cropDisplayViewport").addEventListener(ev,endCropDrag));
+
+/* 크롭 화면 핀치 확대·축소 */
+let cropPointers=new Map(),cropPinch=null;
+$("cropDisplayViewport").addEventListener("pointerdown",e=>{
+ if(!cropDisplayActive||$("cropAdjust").classList.contains("show"))return;
+ cropPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(cropPointers.size===2){
+  let p=[...cropPointers.values()];
+  cropPinch={d:Math.max(1,Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)),scale:cropScale};
+ }
+});
+$("cropDisplayViewport").addEventListener("pointermove",e=>{
+ if(!cropPointers.has(e.pointerId)||cropPointers.size<2||!cropPinch)return;
+ cropPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ let p=[...cropPointers.values()],d=Math.max(1,Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y));
+ cropScale=Math.max(.5,Math.min(3,cropPinch.scale*d/cropPinch.d));
+ syncAdjustInputs();layoutCropDisplay();
+});
+function endCropPinch(e){cropPointers.delete(e.pointerId);if(cropPointers.size<2){cropPinch=null;save()}}
+["pointerup","pointercancel","lostpointercapture"].forEach(ev=>$("cropDisplayViewport").addEventListener(ev,endCropPinch));
+
+/* 패턴 잠금 */
+function buildPattern(el,list){
+ el.innerHTML="";
+ for(let i=0;i<9;i++){
+  let b=document.createElement("button");b.type="button";b.className="patternDot";b.dataset.i=i;el.appendChild(b);
+ }
+ let active=false,done=false,pointer=null;
+ function paint(){el.querySelectorAll(".patternDot").forEach((b,i)=>b.classList.toggle("selected",list.includes(i)))}
+ function add(i){
+  if(list.includes(i))return;
+  if(list.length){
+   let a=list[list.length-1],dr=Math.floor(i/3)-Math.floor(a/3),dc=i%3-a%3;
+   if(Math.abs(dr)===2&&Math.abs(dc)===0||Math.abs(dc)===2&&Math.abs(dr)===0||Math.abs(dr)===2&&Math.abs(dc)===2){
+    let mid=(Math.floor(a/3)+Math.floor(i/3))/2*3+(a%3+i%3)/2;
+    if(Number.isInteger(mid)&&!list.includes(mid))list.push(mid);
+   }
+  }
+  list.push(i);paint();
+ }
+ function at(e){
+  let b=document.elementFromPoint(e.clientX,e.clientY)?.closest(".patternDot");
+  return b&&el.contains(b)?Number(b.dataset.i):-1;
+ }
+ el.onpointerdown=e=>{
+  let i=at(e);if(i<0||done)return;
+  e.preventDefault();list.length=0;active=true;pointer=e.pointerId;
+  try{el.setPointerCapture(e.pointerId)}catch(_){}
+  add(i);
+ };
+ el.onpointermove=e=>{if(active&&pointer===e.pointerId){let i=at(e);if(i>=0)add(i)}};
+ const end=e=>{if(active&&pointer===e.pointerId){active=false;done=true}};
+ el.onpointerup=end;el.onpointercancel=end;
+ el.reset=()=>{list.length=0;active=false;done=false;paint()};
+ el.getValue=()=>done&&list.length>=4?list.join("-"):null;
+}
+let loginPattern=[],setupPattern=[],setupStep=0,firstPattern="";
+buildPattern($("loginPattern"),loginPattern);
+buildPattern($("setupPatternGrid"),setupPattern);
+async function hash(value,salt){
+ let bytes=new TextEncoder().encode(salt+":"+value);
+ let h=await crypto.subtle.digest("SHA-256",bytes);
+ return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+function saltValue(){
+ let a=new Uint8Array(16);crypto.getRandomValues(a);
+ return [...a].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+$("setupPatternBtn").onclick=()=>{
+ $("patternSetup").style.display="block";setupStep=0;firstPattern="";
+ $("setupPatternGrid").reset();$("setupPatternText").textContent="첫 번째 패턴을 그리세요.";
+ $("confirmPatternBtn").textContent="다음";
+};
+$("clearPatternBtn").onclick=()=>$("setupPatternGrid").reset();
+$("cancelPatternBtn").onclick=()=>$("patternSetup").style.display="none";
+$("confirmPatternBtn").onclick=async()=>{
+ let p=$("setupPatternGrid").getValue();
+ if(!p){$("setupPatternStatus").textContent="최소 4개 점을 연결하세요.";return}
+ if(setupStep===0){
+  firstPattern=p;setupStep=1;$("setupPatternGrid").reset();
+  $("setupPatternText").textContent="같은 패턴을 한 번 더 그리세요.";
+  $("confirmPatternBtn").textContent="저장";return;
+ }
+ if(p!==firstPattern){
+  setupStep=0;firstPattern="";$("setupPatternGrid").reset();
+  $("setupPatternText").textContent="패턴이 다릅니다. 처음부터 다시 설정하세요.";
+  $("confirmPatternBtn").textContent="다음";return;
+ }
+ try{
+  let salt=saltValue();security={salt,hash:await hash(p,salt)};saveSec();
+  $("patternSetup").style.display="none";alert("패턴이 저장되었습니다.");
+ }catch(e){$("setupPatternStatus").textContent="보안 저장에 실패했습니다."}
+};
+$("disablePatternBtn").onclick=()=>{
+ if(!security.hash){alert("설정된 패턴이 없습니다.");return}
+ if(confirm("패턴 잠금을 해제할까요?")){security={};saveSec();alert("패턴 잠금이 해제되었습니다.")}
+};
+
+/* 스토리보드 이미지 다운로드 공통 함수 */
+function downloadBlob(blob,filename){
+ if(!blob){alert("이미지를 가져오지 못했습니다.");return}
+ let url=URL.createObjectURL(blob),a=document.createElement("a");
+ a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+function downloadCanvas(canvas,filename){
+ canvas.toBlob(blob=>downloadBlob(blob,filename),"image/png");
+}
+function downloadImageUrl(url,filename){
+ fetch(url).then(r=>{
+  if(!r.ok)throw new Error("이미지 없음");
+  return r.blob();
+ }).then(blob=>downloadBlob(blob,filename)).catch(()=>{
+  let a=document.createElement("a");a.href=url;a.download=filename;a.target="_blank";a.click();
+ });
+}
+
+/* 메인 100칸 스프라이트 */
+const sprite=new Image();
+let spriteLoaded=false;
+sprite.onload=()=>{spriteLoaded=true;if(storyMode==="main")renderStory();if(detailKind==="main")renderDetail()};
+sprite.onerror=()=>{spriteLoaded=false;if(storyMode==="main")renderStory()};
+sprite.src="storyboard.png";
+
+let storyMode="main",mainIndex=0,detailIndex=1,detailKind="main";
+$("storyBtn").onclick=()=>{$("storyboardScreen").classList.add("show");storyMode="main";renderStory()};
+$("storyClose").onclick=()=>$("storyboardScreen").classList.remove("show");
+$("mainTab").onclick=()=>{storyMode="main";renderStory()};
+$("detailTab").onclick=()=>{storyMode="detail";renderStory()};
+$("storyPrev").onclick=()=>{if(storyMode==="main")mainIndex=(mainIndex+99)%100;else detailIndex=(detailIndex+18)%20+1;renderStory()};
+$("storyNext").onclick=()=>{if(storyMode==="main")mainIndex=(mainIndex+1)%100;else detailIndex=detailIndex%20+1;renderStory()};
+
+function renderStory(){
+ $("mainTab").classList.toggle("active",storyMode==="main");
+ $("detailTab").classList.toggle("active",storyMode==="detail");
+ $("storyTitle").textContent=storyMode==="main"?"메인 스토리보드 100칸":"세부 스토리보드 20장";
+ $("storyGrid").style.gridTemplateColumns=innerWidth>=650?(storyMode==="main"?"repeat(10,minmax(0,1fr))":"repeat(5,minmax(0,1fr))"):(storyMode==="main"?"repeat(5,minmax(0,1fr))":"repeat(3,minmax(0,1fr))");
+ $("storyGrid").innerHTML="";
+ if(storyMode==="main")renderMainGrid();else renderDetailGrid();
+}
+function renderMainGrid(){
+ let grid=$("storyGrid");
+ for(let i=0;i<100;i++){
+  let btn=document.createElement("button");btn.className="storyCell"+(descriptions.main[i]?" hasDesc":"");
+  let canvas=document.createElement("canvas");canvas.width=300;canvas.height=300;
+  let ctx=canvas.getContext("2d");
+  if(spriteLoaded){
+   let sw=sprite.naturalWidth/10,sh=sprite.naturalHeight/10;
+   ctx.drawImage(sprite,(i%10)*sw,Math.floor(i/10)*sh,sw,sh,0,0,300,300);
+  }else{
+   ctx.fillStyle="#20283a";ctx.fillRect(0,0,300,300);
+   ctx.fillStyle="white";ctx.font="50px Arial";ctx.textAlign="center";ctx.fillText(String(i+1),150,160);
+  }
+  let number=document.createElement("span");number.className="cellNumber";number.textContent=String(i+1).padStart(2,"0");
+  let dl=document.createElement("button");dl.className="downloadCell";dl.textContent="↓";dl.title="이 이미지 다운로드";
+  dl.onclick=e=>{e.stopPropagation();downloadCanvas(canvas,"storyboard_main_"+String(i+1).padStart(3,"0")+".png")};
+  btn.append(canvas,number,dl);
+  btn.onclick=()=>openMainDetail(i);
+  grid.appendChild(btn);
+ }
+}
+function detailPath(i){return "storyboard_"+String(i).padStart(4,"0")+".jpg"}
+function renderDetailGrid(){
+ let grid=$("storyGrid");
+ for(let i=1;i<=20;i++){
+  let btn=document.createElement("button");btn.className="storyCell"+(descriptions.detail[i]?" hasDesc":"");
+  let img=document.createElement("img");img.src=detailPath(i);img.alt="세부 이미지 "+i;img.loading="lazy";
+  let number=document.createElement("span");number.className="cellNumber";number.textContent="세부 "+String(i).padStart(2,"0");
+  let dl=document.createElement("button");dl.className="downloadCell";dl.textContent="↓";dl.title="이 이미지 다운로드";
+  dl.onclick=e=>{e.stopPropagation();downloadImageUrl(detailPath(i),"storyboard_detail_"+String(i).padStart(2,"0")+".jpg")};
+  btn.append(img,number,dl);btn.onclick=()=>openDetail(i);grid.appendChild(btn);
+ }
+}
+
+/* 상세 이미지 및 개별 다운로드 */
+function openMainDetail(i){
+ detailKind="main";mainIndex=i;
+ $("detailCanvas").style.display="block";$("detailImage").style.display="none";
+ $("detailScreen").classList.add("show");renderDetail();updateDetail();loadDescription();resetDetail();
+}
+function openDetail(i){
+ detailKind="detail";detailIndex=i;
+ $("detailCanvas").style.display="none";$("detailImage").style.display="block";
+ $("detailImage").src=detailPath(i);
+ $("detailScreen").classList.add("show");updateDetail();loadDescription();resetDetail();
+}
+function renderDetail(){
+ if(!spriteLoaded)return;
+ let c=$("detailCanvas"),ctx=c.getContext("2d");
+ let sw=sprite.naturalWidth/10,sh=sprite.naturalHeight/10;
+ c.width=Math.round(sw);c.height=Math.round(sh);
+ ctx.drawImage(sprite,(mainIndex%10)*sw,Math.floor(mainIndex/10)*sh,sw,sh,0,0,c.width,c.height);
+ fitDetail();
+}
+function updateDetail(){
+ $("detailTitle").textContent=detailKind==="main"?"메인 "+(mainIndex+1)+"번":"세부 "+detailIndex+"번";
+}
+function loadDescription(){
+ $("detailDescription").value=descriptions[detailKind][detailKind==="main"?mainIndex:detailIndex]||"";
+}
+$("detailDescription").oninput=()=>{
+ if(detailKind==="main")descriptions.main[mainIndex]=$("detailDescription").value;
+ else descriptions.detail[detailIndex]=$("detailDescription").value;
+ saveDesc();
+};
+function activeDetail(){return detailKind==="main"?$("detailCanvas"):$("detailImage")}
+let detailScale=1,detailX=0,detailY=0;
+function fitDetail(){
+ let el=activeDetail(),v=$("detailViewport"),iw,ih;
+ if(el.tagName==="CANVAS"){iw=el.width;ih=el.height}else{iw=el.naturalWidth;ih=el.naturalHeight}
+ if(!iw||!ih)return;
+ let r=Math.min(v.clientWidth/iw,v.clientHeight/ih);
+ el.style.width=iw*r+"px";el.style.height=ih*r+"px";
+ detailX=(v.clientWidth-iw*r)/2;detailY=(v.clientHeight-ih*r)/2;renderDetailTransform();
+}
+function renderDetailTransform(){activeDetail().style.transform=`translate(${detailX}px,${detailY}px) scale(${detailScale})`}
+function resetDetail(){detailScale=1;requestAnimationFrame(fitDetail)}
+$("detailImage").onload=()=>{if(detailKind==="detail")fitDetail()};
+$("detailReset").onclick=resetDetail;
+$("detailBack").onclick=()=>{$("detailScreen").classList.remove("show");$("storyboardScreen").classList.add("show");renderStory()};
+$("detailClose").onclick=()=>$("detailScreen").classList.remove("show");
+$("detailDownload").onclick=()=>{
+ if(detailKind==="main")downloadCanvas($("detailCanvas"),"storyboard_main_"+String(mainIndex+1).padStart(3,"0")+".png");
+ else downloadImageUrl(detailPath(detailIndex),"storyboard_detail_"+String(detailIndex).padStart(2,"0")+".jpg");
+};
+function stepDetail(d){
+ if(detailKind==="main"){mainIndex=(mainIndex+d+100)%100;renderDetail()}
+ else{detailIndex=(detailIndex-1+d+20)%20+1;$("detailImage").src=detailPath(detailIndex)}
+ updateDetail();loadDescription();resetDetail();
+}
+$("detailPrev").onclick=()=>stepDetail(-1);
+$("detailNext").onclick=()=>stepDetail(1);
+
+/* 상세 이미지 핀치 및 이동 */
+let detailPointers=new Map(),detailPinch=null;
+$("detailViewport").addEventListener("pointerdown",e=>{
+ e.preventDefault();try{$("detailViewport").setPointerCapture(e.pointerId)}catch(_){}
+ detailPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(detailPointers.size===2){
+  let p=[...detailPointers.values()];
+  detailPinch={d:Math.max(1,Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y)),s:detailScale,x:detailX,y:detailY};
+ }
+});
+$("detailViewport").addEventListener("pointermove",e=>{
+ if(!detailPointers.has(e.pointerId))return;
+ let old=detailPointers.get(e.pointerId);detailPointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
+ if(detailPointers.size===2&&detailPinch){
+  let p=[...detailPointers.values()],d=Math.max(1,Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y));
+  detailScale=Math.max(.2,Math.min(12,detailPinch.s*d/detailPinch.d));
+ }else{detailX+=e.clientX-old.x;detailY+=e.clientY-old.y}
+ renderDetailTransform();
+});
+function endDetail(e){detailPointers.delete(e.pointerId);if(detailPointers.size<2)detailPinch=null}
+["pointerup","pointercancel","lostpointercapture"].forEach(ev=>$("detailViewport").addEventListener(ev,endDetail));
+$("detailViewport").addEventListener("wheel",e=>{
+ e.preventDefault();let r=$("detailViewport").getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top;
+ let ns=Math.max(.2,Math.min(12,detailScale*(e.deltaY<0?1.12:.89))),q=ns/detailScale;
+ detailX=px-(px-detailX)*q;detailY=py-(py-detailY)*q;detailScale=ns;renderDetailTransform();
+},{passive:false});
+
+/* 2장 비교 */
+function setupCompareSelect(id){
+ let s=$(id);s.innerHTML="";
+ for(let i=1;i<=20;i++){let o=document.createElement("option");o.value=i;o.textContent="세부 이미지 "+i;s.appendChild(o)}
+}
+setupCompareSelect("compareA");setupCompareSelect("compareB");
+$("compareA").value="1";$("compareB").value="2";
+function loadCompare(side){
+ let select=side==="A"?$("compareA"):$("compareB");
+ let img=side==="A"?$("compareImgA"):$("compareImgB");
+ let desc=side==="A"?$("compareDescA"):$("compareDescB");
+ let n=Number(select.value);
+ img.onload=()=>fitCompare(side);img.src=detailPath(n);
+ desc.value=descriptions.detail[n]||"";
+}
+function fitCompare(side){
+ let img=side==="A"?$("compareImgA"):$("compareImgB");
+ let box=side==="A"?$("compareBoxA"):$("compareBoxB");
+ if(!img.naturalWidth)return;
+ let r=Math.min(box.clientWidth/img.naturalWidth,box.clientHeight/img.naturalHeight);
+ img.style.width=img.naturalWidth*r+"px";img.style.height=img.naturalHeight*r+"px";
+ img.style.transform=`translate(${(box.clientWidth-img.naturalWidth*r)/2}px,${(box.clientHeight-img.naturalHeight*r)/2}px)`;
+}
+$("compareOpen").onclick=()=>{
+ $("compareScreen").classList.add("show");loadCompare("A");loadCompare("B");
+};
+$("compareClose").onclick=()=>{
+ ["A","B"].forEach(side=>{
+  let n=side==="A"?$("compareA").value:$("compareB").value;
+  descriptions.detail[n]=side==="A"?$("compareDescA").value:$("compareDescB").value;
+ });
+ saveDesc();$("compareScreen").classList.remove("show");
+};
+$("compareA").onchange=()=>loadCompare("A");
+$("compareB").onchange=()=>loadCompare("B");
+$("compareDescA").oninput=()=>{descriptions.detail[$("compareA").value]=$("compareDescA").value;saveDesc()};
+$("compareDescB").oninput=()=>{descriptions.detail[$("compareB").value]=$("compareDescB").value;saveDesc()};
+$("compareSwap").onclick=()=>{
+ let a=$("compareA").value,b=$("compareB").value;$("compareA").value=b;$("compareB").value=a;loadCompare("A");loadCompare("B");
+};
+$("compareReset").onclick=()=>{fitCompare("A");fitCompare("B")};
+
+/* 백업 / 복원 */
+function backupObject(){
+ save();
+ return{app:"Mila Video",version:2,storage:{[KEY]:data,[DESC]:descriptions,[SEC]:security}};
+}
+$("exportBtn").onclick=()=>$("backupText").value=JSON.stringify(backupObject(),null,2);
+$("downloadBackupBtn").onclick=()=>{
+ let blob=new Blob([JSON.stringify(backupObject(),null,2)],{type:"application/json"});
+ downloadBlob(blob,"mila-video-backup.json");
+};
+$("copyBackupBtn").onclick=async()=>{
+ try{await navigator.clipboard.writeText($("backupText").value);alert("복사했습니다.")}
+ catch(e){$("backupText").select();alert("텍스트를 선택했습니다. 복사하세요.")}
+};
+$("importBtn").onclick=()=>{
+ let o;try{o=JSON.parse($("backupText").value)}catch(e){alert("JSON 형식 오류");return}
+ if(o.app!=="Mila Video"||!o.storage||!o.storage[KEY]){alert("올바른 백업 파일이 아닙니다.");return}
+ if(!confirm("현재 데이터를 백업 파일 내용으로 교체할까요?"))return;
+ try{
+  localStorage.setItem(KEY,JSON.stringify(o.storage[KEY]));
+  if(o.storage[DESC])localStorage.setItem(DESC,JSON.stringify(o.storage[DESC]));
+  if(o.storage[SEC])localStorage.setItem(SEC,JSON.stringify(o.storage[SEC]));
+  alert("복원 완료. 새로고침합니다.");location.reload();
+ }catch(e){alert("저장 공간이 부족합니다.")}
+};
+
+/* 회전 및 화면 크기 변경 */
+function resizeAll(){
+ if($("detailScreen").classList.contains("show"))fitDetail();
+ if($("compareScreen").classList.contains("show")){fitCompare("A");fitCompare("B")}
+ if(cropDisplayActive)refreshCropDisplay();
+ if($("storyboardScreen").classList.contains("show"))renderStory();
+}
+window.addEventListener("resize",resizeAll);
+window.addEventListener("orientationchange",()=>{setTimeout(resizeAll,150);setTimeout(resizeAll,450)});
+if(window.visualViewport)window.visualViewport.addEventListener("resize",resizeAll);
+
+window.addEventListener("beforeunload",save);
+})();
+</script>
+</body>
+  </html>
